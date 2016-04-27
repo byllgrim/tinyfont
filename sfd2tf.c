@@ -2,40 +2,53 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Types */
+/* TODO structure for splinesets */
+
 /* Function declarations */
-static void parseheader();
-static void parseglyphs();
+static void parse();
+static void parsechar();
+static void parsesplines();
 
 /* Global variables */
-static char *copyright = NULL;
-static int ascent = -1;
-static int descent = -1;
+static char *copyright;
+static int ascent;
+static int descent;
+static char *strbuf;
 
 /* Function definitions */
 void
-parseheader()
+parse()
 {
-	char *key, *end, *str = calloc(BUFSIZ, sizeof(char));
+	char *end;
+	char *key = strtok_r(strbuf, ": ", &end);
 
-	/* TODO is this a bad way to indicate uninitialized state? */
-	while(descent == -1 || ascent == -1 || copyright == NULL) {
-		fgets(str, BUFSIZ, stdin);
-		key = strtok_r(str, ": ", &end);
-
-		if(!strcmp(key, "Copyright")) {
-			copyright = malloc(strlen(++end) - 1);
-			strcpy(copyright, strtok(end, "\n")); //TODO strncpy?
-		}
-		if(!strcmp(key, "Ascent"))
-			ascent = atoi(++end);
-		if(!strcmp(key, "Descent"))
-			descent = atoi(++end);
-	}
+	if (!strcmp(key, "StartChar"))
+		parsechar();
+	else if (!strcmp(key, "Copyright"))
+		strcpy(copyright, strtok(end, "\n")); //TODO strncpy?
+	else if (!strcmp(key, "Ascent"))
+		ascent = atoi(++end);
+	else if (!strcmp(key, "Descent"))
+		descent = atoi(++end);
 }
 
 void
-parseglyphs()
+parsechar()
 {
+	int codepoint, width;
+	char *end;
+
+	fgets(strbuf, BUFSIZ, stdin);
+	strtok(strbuf, " "); strtok(NULL, " ");
+	codepoint = atoi(strtok(NULL, " "));
+
+	fgets(strbuf, BUFSIZ, stdin);
+	strtok_r(strbuf, " ", &end);
+	width = atoi(end);
+
+	parsesplines(); /* TODO save structure? */
+
 	/* parse glyphs:
 	 *   'StartChar: '
 	 *     ∟> 'Fore\nSplineSet'
@@ -43,15 +56,21 @@ parseglyphs()
 	 */
 }
 
+void /* TODO return splineset? */
+parsesplines()
+{
+	//
+}
+
 int
 main()
 {
-	parseheader();
-	parseglyphs();
+	copyright = malloc(BUFSIZ); /* TODO init()? */
+	strbuf = malloc(BUFSIZ);
 
-	char *str = malloc(BUFSIZ);
 	while(!feof(stdin)) {
-		fgets(str, BUFSIZ, stdin);
+		fgets(strbuf, BUFSIZ, stdin);
+		parse(strbuf);
 	}
 
 	return 0;
