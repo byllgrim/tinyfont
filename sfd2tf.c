@@ -12,24 +12,36 @@ typedef struct {
 	float y;
 } Point;
 
-typedef struct {
+typedef struct Command Command;
+struct Command {
 	Point *p0;
 	Point *p1;
 	Point *p2;
 	int type;
-} Command;
+	Command *next;
+};
+
+typedef struct Glyph Glyph;
+struct Glyph {
+	int codepoint;
+	int width;
+	Command *commands;
+	Glyph *next;
+};
 
 /* Function declarations */
 static void parse();
-static void parsechar();
-static void parsesplines();
-static void parsecommands();
+static void parseglyph();
+static void movetocommands();
+static Command *parsecommands();
 
 /* Global variables */
 static char *copyright;
 static int ascent;
 static int descent;
 static char *strbuf;
+static Glyph *firstglyph;
+static Glyph *lastglyph;
 
 /* Function definitions */
 void
@@ -39,7 +51,7 @@ parse()
 	char *key = strtok_r(strbuf, ": ", &end);
 
 	if (!strcmp(key, "StartChar"))
-		parsechar();
+		parseglyph();
 	else if (!strcmp(key, "Copyright"))
 		strcpy(copyright, strtok(end, "\n")); //TODO strncpy?
 	else if (!strcmp(key, "Ascent"))
@@ -49,24 +61,27 @@ parse()
 }
 
 void
-parsechar()
+parseglyph()
 {
+	Glyph *glyph = malloc(sizeof(Glyph));
 	int codepoint, width;
 	char *end;
 
 	fgets(strbuf, BUFSIZ, stdin);
 	strtok(strbuf, " "); strtok(NULL, " ");
-	codepoint = atoi(strtok(NULL, " "));
+	glyph->codepoint = atoi(strtok(NULL, " "));
 
 	fgets(strbuf, BUFSIZ, stdin);
 	strtok_r(strbuf, " ", &end);
-	width = atoi(end);
+	glyph->width = atoi(end);
 
-	parsesplines(); /* TODO save structure? */
+	movetocommands();
+	glyph->commands = parsecommands();
+	/* TODO addglyph(glyph) */
 }
 
-void /* TODO return splineset? */
-parsesplines()
+void
+movetocommands()
 {
 	char *prev = malloc(BUFSIZ);
 
@@ -75,19 +90,19 @@ parsesplines()
 		fgets(strbuf, BUFSIZ, stdin);
 	}
 
-	parsecommands();
-
+	fgets(strbuf, BUFSIZ, stdin);
 	free(prev);
 }
 
-void
+Command *
 parsecommands()
 {
-	fgets(strbuf, BUFSIZ, stdin);
 	while (strcmp(strbuf, "EndSplineSet\n")) {
 		printf("parse: %s", strbuf);
 		fgets(strbuf, BUFSIZ, stdin);
 	}
+
+	return NULL; /* TODO actually return commands */
 }
 
 int
