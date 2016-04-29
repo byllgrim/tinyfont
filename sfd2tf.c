@@ -5,18 +5,12 @@
 /* Types */
 enum {curveto, lineto, moveto}; /* command type */
 
-/* TODO structure for splinesets */
-
-typedef struct {
-	float x;
-	float y;
-} Point;
-
 typedef struct Command Command;
 struct Command {
-	Point *p0;
-	Point *p1;
-	Point *p2;
+	float x0, y0;
+	float x1, y1;
+	float x2, y2;
+	float x3, y3;
 	int type;
 	Command *next;
 };
@@ -32,7 +26,7 @@ struct Glyph {
 /* Function declarations */
 static void parse();
 static void parseglyph();
-static void movetocommands();
+static int movetocommands();
 static Command *parsecommands();
 
 /* Global variables */
@@ -64,7 +58,6 @@ void
 parseglyph()
 {
 	Glyph *glyph = malloc(sizeof(Glyph));
-	int codepoint, width;
 	char *end;
 
 	fgets(strbuf, BUFSIZ, stdin);
@@ -75,34 +68,70 @@ parseglyph()
 	strtok_r(strbuf, " ", &end);
 	glyph->width = atoi(end);
 
-	movetocommands();
-	glyph->commands = parsecommands();
+	if (movetocommands())
+		glyph->commands = parsecommands();
 	/* TODO addglyph(glyph) */
 }
 
-void
+int
 movetocommands()
 {
 	char *prev = malloc(BUFSIZ);
 
 	while (strcmp(prev, "Fore\n") && strcmp(strbuf, "SplineSet\n")) {
+		if (!strcmp(strbuf, "EndChar\n")) {
+			free(prev);
+			return 0;
+		}
+
 		strncpy(prev, strbuf, BUFSIZ);
 		fgets(strbuf, BUFSIZ, stdin);
 	}
 
 	fgets(strbuf, BUFSIZ, stdin);
 	free(prev);
+	return 1;
 }
 
 Command *
 parsecommands()
 {
+	char *line;
+	float x0, y0;
+	Command *first = malloc(sizeof(Command)); //TODO dummies use memory
+	Command *last = first;
+
 	while (strcmp(strbuf, "EndSplineSet\n")) {
-		printf("parse: %s", strbuf);
+		line = strbuf;
+		float x = strtof(line, &line);
+		float y = strtof(line, &line);
+		char *t = strtok_r(line, " ", &line);
+
+		if (!strcmp(t, "m")) {
+			x0 = x; y0 = y;
+		} else if (!strcmp(t, "l")) {
+			Command *cmd = malloc(sizeof(Command));
+			cmd->x0 = x0; cmd->y0 = y0;
+			cmd->x3 = x; cmd->y3 = y;
+			last->next = cmd;
+			last = cmd;
+			x0 = x; y0 = y;
+		} else {
+			Command *cmd = malloc(sizeof(Command));
+			cmd->x0 = x0; cmd->y0 = y0;
+			cmd->x1 = x; cmd->y1 = y;
+			cmd->x2 = strtof(t, &t); cmd->y2 = strtof(line, &line);
+			cmd->x3 = strtof(line, &line);
+			cmd->y3 = strtof(line, &line);
+			last->next = cmd;
+			last = cmd;
+			x0 = cmd->x3; y0 = cmd->y3;
+		}
+
 		fgets(strbuf, BUFSIZ, stdin);
 	}
 
-	return NULL; /* TODO actually return commands */
+	return first;
 }
 
 int
