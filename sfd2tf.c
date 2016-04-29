@@ -78,7 +78,7 @@ movetocommands()
 {
 	char *prev = malloc(BUFSIZ);
 
-	while (strcmp(prev, "Fore\n") && strcmp(strbuf, "SplineSet\n")) {
+	while (strcmp(prev, "Fore\n") || strcmp(strbuf, "SplineSet\n")) {
 		if (!strcmp(strbuf, "EndChar\n")) {
 			free(prev);
 			return 0;
