@@ -1,0 +1,21 @@
+
+tinyfont specification
+
++------------------+--------------------------------------------------+
+| Bytes            | Description                                      |
++------------------+--------------------------------------------------+
+| 8                | "tinyfont" magic number                          |
++------------------+--------------------------------------------------+
+| 2,n              | length, copyright                                |
++------------------+--------------------------------------------------+
+| 2                | em size = ascent + descent                       |
++------------------+--------------------------------------------------+
+| 2,{2,2}          | maplength, {codepoint, offset}                   |
++------------------+--------------------------------------------------+
+| 2,2,2,{12|12|28} | codepoint, glyphwidth, length, {xym|xyl|xyxyxyc} |
++------------------+--------------------------------------------------+
+All values are in big endian, except 'c', 'l', 'm' are LE uint32_t.
+Text is in utf-8.
+CodePoints are integers in Unicode BMP.
+Point coordinates are in IEEE 754 "Binary32".
+Glyphlength is length from start of glyph entry.
