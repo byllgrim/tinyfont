@@ -1,5 +1,5 @@
 /* See LICENSE file */
-#include <arpa/inet.h>
+#include <arpa/inet.h> /* TODO remove and diy? */
 
 #include <stdint.h>
 #include <stdio.h>
@@ -28,6 +28,7 @@ struct Glyph {
 };
 
 /* Function declarations */
+static float swapfloat(float f);
 static void *ecalloc(size_t nmemb, size_t size);
 static void parse();
 static void parseglyph();
@@ -35,6 +36,8 @@ static int movetocommands();
 static int parsecommands(Glyph *glyph);
 static void writeheader();
 static void writemap();
+static void writeglyphs();
+static void writecommands(Glyph *glyph);
 
 /* Global variables */
 static char *copyright;
@@ -46,6 +49,21 @@ static Glyph *lastglyph;
 static int glyphcount = 0;
 
 /* Function definitions */
+float
+swapfloat(float f)
+{
+	float rev;
+	char *rev_p = (char *)&rev;
+	char *f_p = (char *)&f;
+
+	rev_p[0] = f_p[3];
+	rev_p[1] = f_p[2];
+	rev_p[2] = f_p[1];
+	rev_p[3] = f_p[0];
+
+	return rev;
+}
+
 void *
 ecalloc(size_t nmemb, size_t size)
 {
@@ -199,6 +217,68 @@ writemap()
 	}
 }
 
+void
+writeglyphs()
+{
+	uint16_t codepoint, width, length;
+	Glyph *glyph = firstglyph->next; /* skip the dummy */
+
+	while (glyph != NULL) {
+		codepoint = htons((uint16_t)glyph->codepoint);
+		fwrite(&codepoint, sizeof(uint16_t), 1, stdout);
+
+		width = htons((uint16_t)glyph->width);
+		fwrite(&width, sizeof(uint16_t), 1, stdout);
+
+		length = htons((uint16_t)glyph->length);
+		fwrite(&length, sizeof(uint16_t), 1, stdout);
+
+		writecommands(glyph);
+		glyph = glyph->next;
+	}
+}
+
+void
+writecommands(Glyph *glyph)
+{
+	float points[6]; /* TODO malloc? */
+	Command *cmd = glyph->commands;
+	uint32_t c = 0x00000063; /* 'c' */
+	uint32_t l = 0x0000006C; /* 'l' */
+	uint32_t m = 0x0000006D; /* 'm' */
+
+	if (cmd == NULL)
+		return;
+	else
+		cmd = cmd->next; /* '->next' skips dummy */
+
+	while (cmd != NULL) {
+		points[0] = swapfloat(cmd->x0);
+		points[1] = swapfloat(cmd->y0);
+
+		switch (cmd->type) {
+		case curveto:
+			points[2] = swapfloat(cmd->x1);
+			points[3] = swapfloat(cmd->y1);
+			points[4] = swapfloat(cmd->x2);
+			points[5] = swapfloat(cmd->y2);
+			fwrite(&points, sizeof(float), 6, stdout);
+			fwrite(&c, sizeof(uint32_t), 1, stdout);
+			break;
+		case lineto:
+			fwrite(&points, sizeof(float), 2, stdout);
+			fwrite(&l, sizeof(uint32_t), 1, stdout);
+			break;
+		case moveto:
+			fwrite(&points, sizeof(float), 2, stdout);
+			fwrite(&m, sizeof(uint32_t), 1, stdout);
+			break;
+		}
+
+		cmd = cmd->next;
+	}
+}
+
 int
 main()
 {
@@ -207,14 +287,14 @@ main()
 	firstglyph = ecalloc(1, sizeof(Glyph)); /* TODO dummies use memory */
 	lastglyph = firstglyph;
 
-	while(!feof(stdin)) {
+	while (!feof(stdin)) {
 		fgets(strbuf, BUFSIZ, stdin);
 		parse(strbuf);
 	}
 
 	writeheader();
 	writemap();
-	/* writeglyphs(); */
+	writeglyphs();
 
 	/* TODO does one free buffers before return? */
 	return 0;
