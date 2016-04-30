@@ -1,3 +1,6 @@
+# Fonts
+*.tf
+
 # Object files
 *.o
 *.ko

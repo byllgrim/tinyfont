@@ -1,3 +1,6 @@
+#include <arpa/inet.h>
+
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,7 +20,7 @@ struct Command {
 
 typedef struct Glyph Glyph;
 struct Glyph {
-	int codepoint;
+	int codepoint; //TODO uint16_t ?
 	int width;
 	Command *commands;
 	Glyph *next;
@@ -28,6 +31,8 @@ static void parse();
 static void parseglyph();
 static int movetocommands();
 static Command *parsecommands();
+static void writeheader();
+static void writeglyphs();
 
 /* Global variables */
 static char *copyright;
@@ -36,6 +41,7 @@ static int descent;
 static char *strbuf;
 static Glyph *firstglyph;
 static Glyph *lastglyph;
+static int glyphcount = 0;
 
 /* Function definitions */
 void
@@ -47,7 +53,7 @@ parse()
 	if (!strcmp(key, "StartChar"))
 		parseglyph();
 	else if (!strcmp(key, "Copyright"))
-		strcpy(copyright, strtok(end, "\n")); //TODO strncpy?
+		strcpy(copyright, strtok(end+1, "\n")); //TODO strncpy?
 	else if (!strcmp(key, "Ascent"))
 		ascent = atoi(++end);
 	else if (!strcmp(key, "Descent"))
@@ -68,11 +74,13 @@ parseglyph()
 	strtok_r(strbuf, " ", &end);
 	glyph->width = atoi(end);
 
-	if (movetocommands()) {
+	if (movetocommands())
 		glyph->commands = parsecommands();
-		lastglyph->next = glyph;
-		lastglyph = glyph;
-	} //TODO else what? dealloc glyph? reference glyphs?
+
+	lastglyph->next = glyph;
+	lastglyph = glyph;
+	glyphcount++;
+	//TODO glyphsize += commandsize?
 }
 
 int
@@ -118,6 +126,7 @@ parsecommands()
 			last->next = cmd;
 			last = cmd;
 			x0 = x; y0 = y;
+			//TODO commandsize += 2?
 		} else {
 			Command *cmd = malloc(sizeof(Command));
 			cmd->x0 = x0; cmd->y0 = y0;
@@ -128,12 +137,49 @@ parsecommands()
 			last->next = cmd;
 			last = cmd;
 			x0 = cmd->x3; y0 = cmd->y3;
+			//TODO commandsize += 4?
 		}
 
 		fgets(strbuf, BUFSIZ, stdin);
 	}
 
 	return first;
+}
+
+void
+writeheader()
+{
+	fwrite("tinyfont", 1, 8, stdout); //TODO consider printf
+
+	uint16_t length = (uint16_t)strlen(copyright);
+	uint16_t n_length = htons(length); //TODO this assumes LE
+	fwrite(&n_length, sizeof(uint16_t), 1, stdout);
+	fwrite(copyright, 1, length, stdout);
+
+	uint16_t em = (uint16_t)(ascent+descent);
+	em = htons(em);
+	fwrite(&em, sizeof(uint16_t), 1, stdout);
+}
+
+void
+writeglyphs()
+{
+	int i;
+	uint16_t maplength, n_maplength, codepoint, offset;
+	Glyph *glyph = firstglyph->next; //first is dummy
+
+	maplength = (uint16_t)(glyphcount * 4); //4 = bytes/entry
+	n_maplength = htons(maplength);
+	fwrite(&n_maplength, sizeof(uint16_t), 1, stdout);
+
+	for (offset = i = 0; i < glyphcount; i++) {
+		fprintf(stderr, "codepoint: %d\n", glyph->codepoint);
+		codepoint = htons((uint16_t)glyph->codepoint);
+		fwrite(&codepoint, sizeof(uint16_t), 1, stdout);
+		fwrite(&offset, sizeof(uint16_t), 1, stdout);
+		//TODO offset += glyph->length;
+		glyph = glyph->next; //TODO fix segfault
+	}
 }
 
 int
@@ -148,6 +194,9 @@ main()
 		fgets(strbuf, BUFSIZ, stdin);
 		parse(strbuf);
 	}
+
+	writeheader();
+	writeglyphs();
 
 	//TODO does one free buffers before return?
 	return 0;
