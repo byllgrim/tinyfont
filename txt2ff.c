@@ -1,3 +1,4 @@
+/* See LICENSE file */
 #include <stdio.h>
 
 int

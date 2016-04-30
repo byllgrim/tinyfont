@@ -1,3 +1,4 @@
+/* See LICENSE file */
 #include <arpa/inet.h>
 
 #include <stdint.h>
@@ -58,8 +59,8 @@ ecalloc(size_t nmemb, size_t size)
 void
 parse()
 {
-	char *end;
-	char *key = strtok_r(strbuf, ": ", &end);
+	char *end, *key;
+	key = strtok_r(strbuf, ": ", &end);
 
 	if (!strcmp(key, "StartChar"))
 		parseglyph();
@@ -74,9 +75,9 @@ parse()
 void
 parseglyph()
 {
+	char *end;
 	Glyph *glyph = ecalloc(1, sizeof(Glyph));
 	glyph->length = 6; /* sizeof glyph header */
-	char *end;
 
 	fgets(strbuf, BUFSIZ, stdin);
 	strtok(strbuf, " "); strtok(NULL, " ");
@@ -117,17 +118,20 @@ movetocommands()
 int
 parsecommands(Glyph *glyph)
 {
-	char *line;
-	Command *first = ecalloc(1, sizeof(Command)); /* TODO dummies/memory */
-	Command *last = first;
+	char *line, *t;
+	Command *first, *last, *cmd;
 	int length = 0;
+	float x, y;
+
+	first = ecalloc(1, sizeof(Command)); /* TODO dummies/memory */
+	last = first;
 
 	while (strcmp(strbuf, "EndSplineSet\n")) {
-		Command *cmd = ecalloc(1, sizeof(Command));
+		cmd = ecalloc(1, sizeof(Command));
 		line = strbuf;
-		float x = strtof(line, &line);
-		float y = strtof(line, &line);
-		char *t = strtok_r(line, " ", &line);
+		x = strtof(line, &line);
+		y = strtof(line, &line);
+		t = strtok_r(line, " ", &line);
 
 		if (!strcmp(t, "m")) {
 			cmd->x0 = x; cmd->y0 = y;
@@ -158,14 +162,16 @@ parsecommands(Glyph *glyph)
 void
 writeheader()
 {
+	uint16_t length, n_length, em;
+
 	fwrite("tinyfont", 1, 8, stdout);
 
-	uint16_t length = (uint16_t)strlen(copyright);
-	uint16_t n_length = htons(length); /* TODO this assumes LE */
+	length = (uint16_t)strlen(copyright);
+	n_length = htons(length); /* TODO this assumes LE */
 	fwrite(&n_length, sizeof(uint16_t), 1, stdout);
 	fwrite(copyright, 1, length, stdout);
 
-	uint16_t em = (uint16_t)(ascent+descent);
+	em = (uint16_t)(ascent+descent);
 	em = htons(em);
 	fwrite(&em, sizeof(uint16_t), 1, stdout);
 }
@@ -208,7 +214,7 @@ main()
 
 	writeheader();
 	writemap();
-	//writeglyphs();
+	/* writeglyphs(); */
 
 	/* TODO does one free buffers before return? */
 	return 0;
