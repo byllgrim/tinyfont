@@ -68,9 +68,11 @@ parseglyph()
 	strtok_r(strbuf, " ", &end);
 	glyph->width = atoi(end);
 
-	if (movetocommands())
+	if (movetocommands()) {
 		glyph->commands = parsecommands();
-	/* TODO addglyph(glyph) */
+		lastglyph->next = glyph;
+		lastglyph = glyph;
+	} //TODO else what? dealloc glyph? reference glyphs?
 }
 
 int
@@ -139,6 +141,8 @@ main()
 {
 	copyright = malloc(BUFSIZ); /* TODO init()? */
 	strbuf = malloc(BUFSIZ);
+	firstglyph = malloc(sizeof(Glyph)); //TODO dummies use memory
+	lastglyph = firstglyph;
 
 	while(!feof(stdin)) {
 		fgets(strbuf, BUFSIZ, stdin);
