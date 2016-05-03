@@ -11,6 +11,7 @@
 static void die(const char *errstr, ...);
 static void *ecalloc(size_t nmemb, size_t size);
 static void readheader();
+static void readmap();
 
 /* Global variables */
 static char *buf;
@@ -18,6 +19,7 @@ static char *txt;
 static FILE *fontfile;
 static int em;
 static int px;
+static int glyphcount;
 
 /* Function definitions */
 void
@@ -62,6 +64,24 @@ readheader()
 	em = (int)ntohs(*(uint16_t *)buf);
 }
 
+void
+readmap()
+{
+	uint16_t length;
+	int i;
+
+	fread(buf, sizeof(uint16_t), 1, fontfile);
+	length = ntohs(*(uint16_t *)buf);
+	glyphcount = length/4;
+	/* alloc map as open addressing hash table with modulo */
+
+	for (i = 0; i < glyphcount; i++) {
+		/* read table */
+	}
+
+	/* glyphpos = ftell */
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -75,6 +95,7 @@ main(int argc, char *argv[])
 	buf = ecalloc(1, BUFSIZ); /* TODO is it opposite? */
 
 	readheader();
+	readmap();
 
 	return EXIT_SUCCESS;
 }
