@@ -29,6 +29,7 @@ static OffsetEntry *newoffsetentry(int rune, long offset);
 static void addoffsetentry(OffsetMap *om, OffsetEntry *oe);
 static void readglyphs();
 static void loadglyph(Rune p);
+static long getoffset(Rune p);
 
 /* Global variables */
 static char *buf;
@@ -38,6 +39,7 @@ static int em;
 static int px;
 static int glyphcount;
 static OffsetMap *om;
+static long glyphsoffset;
 
 /* Function definitions */
 void
@@ -94,13 +96,15 @@ readmap()
 	glyphcount = length/4;
 	om = newoffsetmap(glyphcount);
 
-	map = ecalloc(length, sizeof(uint16_t));
-	fread(map, sizeof(uint16_t), length, fontfile);
+	map = ecalloc(length/2, sizeof(uint16_t));
+	fread(map, sizeof(uint16_t), length/2, fontfile);
 	for (i = 0; i < glyphcount; i+=2) {
 		rune = (int)ntohs(map[i]);
 		offset = (long)ntohs(map[i+1]);
 		addoffsetentry(om, newoffsetentry(rune, offset));
 	}
+
+	glyphsoffset = ftell(fontfile);
 }
 
 OffsetMap *
@@ -149,7 +153,35 @@ readglyphs()
 void
 loadglyph(Rune p)
 {
-	printf("loading rune %d\n", p);
+	uint16_t codepoint, width, cmdlen;
+	long offset;
+
+	offset = getoffset(p);
+	fseek(fontfile, offset, SEEK_SET);
+
+	fread(&codepoint, sizeof(uint16_t), 1, fontfile);
+	codepoint = ntohs(codepoint);
+
+	fread(&width, sizeof(uint16_t), 1, fontfile);
+	width = ntohs(width);
+
+	fread(&cmdlen, sizeof(uint16_t), 1, fontfile);
+	cmdlen = ntohs(cmdlen);
+	/* TODO readcommands */
+}
+
+long
+getoffset(Rune p)
+{
+	OffsetEntry **map = om->map;
+	int len, index;
+	len = om->len;
+	index = p % len;
+
+	while (map[index] && map[index]->rune != p)
+		index++;
+
+	return index < len ? map[index]->offset + glyphsoffset : -1;
 }
 
 int

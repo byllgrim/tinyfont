@@ -17,5 +17,6 @@ tinyfont specification
 All values are in big endian, except 'c', 'l', 'm' are LE uint32_t.
 Text is in utf-8.
 CodePoints are integers in Unicode BMP.
+Offset is from end of map.
 Point coordinates are in IEEE 754 "Binary32".
 Glyphlength is length from start of glyph entry.
