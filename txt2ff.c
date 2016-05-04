@@ -7,11 +7,25 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Types */
+typedef struct {
+	int rune;
+	long offset;
+} OffsetEntry;
+
+typedef struct {
+	int len;
+	OffsetEntry **map;
+} OffsetMap;
+
 /* Function declarations */
 static void die(const char *errstr, ...);
 static void *ecalloc(size_t nmemb, size_t size);
 static void readheader();
 static void readmap();
+static OffsetMap *newoffsetmap(int length);
+static OffsetEntry *newoffsetentry(int rune, long offset);
+static void addoffsetentry(OffsetMap *om, OffsetEntry *oe);
 
 /* Global variables */
 static char *buf;
@@ -20,6 +34,7 @@ static FILE *fontfile;
 static int em;
 static int px;
 static int glyphcount;
+static OffsetMap *om;
 
 /* Function definitions */
 void
@@ -67,19 +82,54 @@ readheader()
 void
 readmap()
 {
-	uint16_t length;
-	int i;
+	uint16_t length, *map;
+	int i, rune;
+	long offset;
 
 	fread(buf, sizeof(uint16_t), 1, fontfile);
 	length = ntohs(*(uint16_t *)buf);
 	glyphcount = length/4;
-	/* alloc map as open addressing hash table with modulo */
+	om = newoffsetmap(glyphcount);
 
-	for (i = 0; i < glyphcount; i++) {
-		/* read table */
+	map = ecalloc(length, sizeof(uint16_t));
+	fread(map, sizeof(uint16_t), length, fontfile);
+	for (i = 0; i < glyphcount; i+=2) {
+		rune = (int)ntohs(map[i]);
+		offset = (long)ntohs(map[i+1]);
+		addoffsetentry(om, newoffsetentry(rune, offset));
 	}
+}
 
-	/* glyphpos = ftell */
+OffsetMap *
+newoffsetmap(int length) {
+	OffsetMap *om = ecalloc(1, sizeof(OffsetMap));
+	om->len = length;
+	om->map = ecalloc(length, sizeof(OffsetEntry *));
+	return om;
+}
+
+OffsetEntry *
+newoffsetentry(int rune, long offset)
+{
+	OffsetEntry *oe = ecalloc(1, sizeof(OffsetEntry));
+	oe->rune = rune;
+	oe->offset = offset;
+	return oe;
+}
+
+void
+addoffsetentry(OffsetMap *om, OffsetEntry *oe)
+{
+	OffsetEntry **map = om->map;
+	int rune, len, index;
+	rune = oe->rune;
+	len = om->len;
+	index = rune % len;
+
+	while (map[index] && map[index]->rune != rune)
+		index++;
+
+	map[index] = oe;
 }
 
 int
