@@ -6,7 +6,7 @@ SRC = ${BIN:=.c}
 all: ${BIN}
 
 .c:
-	@${CC} -o $@ ${CFLAGS} ${LDFLAGS} $<
+	@${CC} -o $@ ${CFLAGS} $< ${LDFLAGS}
 
 clean:
 	rm -f ${BIN}

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utf.h>
 
 /* Types */
 typedef struct {
@@ -26,6 +27,8 @@ static void readmap();
 static OffsetMap *newoffsetmap(int length);
 static OffsetEntry *newoffsetentry(int rune, long offset);
 static void addoffsetentry(OffsetMap *om, OffsetEntry *oe);
+static void readglyphs();
+static void loadglyph(Rune p);
 
 /* Global variables */
 static char *buf;
@@ -132,6 +135,23 @@ addoffsetentry(OffsetMap *om, OffsetEntry *oe)
 	map[index] = oe;
 }
 
+void
+readglyphs()
+{
+	char *s = txt;
+	Rune p;
+	while (*s) {
+		s += chartorune(&p, s);
+		loadglyph(p);
+	}
+}
+
+void
+loadglyph(Rune p)
+{
+	printf("loading rune %d\n", p);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -146,6 +166,9 @@ main(int argc, char *argv[])
 
 	readheader();
 	readmap();
+	readglyphs();
+	/*render();*/
+	/*writefile();*/
 
 	return EXIT_SUCCESS;
 }
