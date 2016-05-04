@@ -19,7 +19,28 @@ typedef struct {
 	OffsetEntry **map;
 } OffsetMap;
 
+typedef struct Spline Spline;
+struct Spline {
+	float x0, y0;
+	float x1, y1;
+	float x2, y2;
+	float x3, y3;
+	Spline *next;
+};
+
+typedef struct {
+	Rune p;
+	int width;
+	Spline *splines;
+} Glyph;
+
+typedef struct {
+	int len;
+	Glyph **map;
+} GlyphMap;
+
 /* Function declarations */
+static void swap32(void *a);
 static void die(const char *errstr, ...);
 static void *ecalloc(size_t nmemb, size_t size);
 static void readheader();
@@ -30,41 +51,58 @@ static void addoffsetentry(OffsetMap *om, OffsetEntry *oe);
 static void readglyphs();
 static void loadglyph(Rune p);
 static long getoffset(Rune p);
+static Spline *parsecommands(int len);
 
 /* Global variables */
 static char *buf;
 static char *txt;
 static FILE *fontfile;
+static OffsetMap *om;
+static GlyphMap *gm;
 static int em;
 static int px;
 static int glyphcount;
-static OffsetMap *om;
 static long glyphsoffset;
 
 /* Function definitions */
 void
+swap32(void *a)
+{
+	char *c = (char *)a;
+	char *rev = malloc(4);
+	memcpy(rev, a, 4);
+
+	c[0] = rev[3];
+	c[1] = rev[2];
+	c[2] = rev[1];
+	c[3] = rev[0];
+
+	free(rev);
+}
+
+void
 die(const char *fmt, ...) {
-        va_list ap;
+	va_list ap;
 
-        va_start(ap, fmt);
-        vfprintf(stderr, fmt, ap);
-        va_end(ap);
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
 
-        if (fmt[0] && fmt[strlen(fmt)-1] == ':') {
-                fputc(' ', stderr);
-                perror(NULL);
-        }
+	if (fmt[0] && fmt[strlen(fmt)-1] == ':') {
+		fputc(' ', stderr);
+		perror(NULL);
+	}
 
-        exit(EXIT_FAILURE);
+	exit(EXIT_FAILURE);
 }
 
 void *
 ecalloc(size_t nmemb, size_t size)
 {
-        void *p;
-        if (!(p = calloc(nmemb, size)))
-                perror(NULL);
-        return p;
+	void *p;
+	if (!(p = calloc(nmemb, size)))
+		perror(NULL);
+	return p;
 }
 
 void
@@ -144,6 +182,11 @@ readglyphs()
 {
 	char *s = txt;
 	Rune p;
+
+	gm = ecalloc(1, sizeof(GlyphMap));
+	gm->len = glyphcount;
+	gm->map = ecalloc(glyphcount, sizeof(Glyph **));
+
 	while (*s) {
 		s += chartorune(&p, s);
 		loadglyph(p);
@@ -153,8 +196,10 @@ readglyphs()
 void
 loadglyph(Rune p)
 {
+	Spline *splines;
 	uint16_t codepoint, width, cmdlen;
 	long offset;
+	/* TODO what if the glyph is already loaded? */
 
 	offset = getoffset(p);
 	fseek(fontfile, offset, SEEK_SET);
@@ -166,8 +211,9 @@ loadglyph(Rune p)
 	width = ntohs(width);
 
 	fread(&cmdlen, sizeof(uint16_t), 1, fontfile);
-	cmdlen = ntohs(cmdlen);
-	/* TODO readcommands */
+	cmdlen = ntohs(cmdlen)/4;
+	splines = parsecommands(cmdlen);
+	/* TODO addglyph(codepoint, width, splines) */
 }
 
 long
@@ -182,6 +228,26 @@ getoffset(Rune p)
 		index++;
 
 	return index < len ? map[index]->offset + glyphsoffset : -1;
+}
+
+Spline *
+parsecommands(int len)
+{
+	int i;
+	float x0, y0;
+	float *cmd = ecalloc(len*4, sizeof(float));
+	fread(cmd, 1, len*4, fontfile);
+printf("len: %d\n", len);
+
+	for (i = 0; i < len;) {
+		x0 = cmd[i++]; y0 = cmd[i++];
+		swap32(&x0); swap32(&y0); /* TODO this assumes LE */
+		printf("x0: %f\ty0: %f\n", x0, y0);
+		/* TODO interpret coordinates and store it */
+	}
+
+	free(cmd);
+	return NULL; /* TODO */
 }
 
 int

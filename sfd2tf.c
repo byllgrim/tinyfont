@@ -22,13 +22,13 @@ typedef struct Glyph Glyph;
 struct Glyph {
 	int codepoint; /* TODO uint16_t ? */
 	int width;
-	int length; /* length in bytes */
+	int cmdlen; /* length in bytes */
 	Command *commands;
 	Glyph *next;
 };
 
 /* Function declarations */
-static float swapfloat(float f);
+static void swap32(void *a);
 static void *ecalloc(size_t nmemb, size_t size);
 static void parse();
 static void parseglyph();
@@ -49,19 +49,19 @@ static Glyph *lastglyph;
 static int glyphcount = 0;
 
 /* Function definitions */
-float
-swapfloat(float f)
+void
+swap32(void *a)
 {
-	float rev;
-	char *rev_p = (char *)&rev;
-	char *f_p = (char *)&f;
+	char *c = (char *)a;
+	char *rev = malloc(4);
+	memcpy(rev, a, 4);
 
-	rev_p[0] = f_p[3];
-	rev_p[1] = f_p[2];
-	rev_p[2] = f_p[1];
-	rev_p[3] = f_p[0];
+	c[0] = rev[3];
+	c[1] = rev[2];
+	c[2] = rev[1];
+	c[3] = rev[0];
 
-	return rev;
+	free(rev);
 }
 
 void *
@@ -95,7 +95,7 @@ parseglyph()
 {
 	char *end;
 	Glyph *glyph = ecalloc(1, sizeof(Glyph));
-	glyph->length = 6; /* sizeof glyph header */
+	glyph->cmdlen = 0; /* exclude sizeof glyph header */
 
 	fgets(strbuf, BUFSIZ, stdin);
 	strtok(strbuf, " "); strtok(NULL, " ");
@@ -106,7 +106,7 @@ parseglyph()
 	glyph->width = atoi(end);
 
 	if (movetocommands())
-		glyph->length += parsecommands(glyph);
+		glyph->cmdlen += parsecommands(glyph);
 
 	lastglyph->next = glyph;
 	lastglyph = glyph;
@@ -211,7 +211,7 @@ writemap()
 
 		n_offset = htons(offset);
 		fwrite(&n_offset, sizeof(uint16_t), 1, stdout);
-		offset += glyph->length;
+		offset += glyph->cmdlen;
 
 		glyph = glyph->next;
 	}
@@ -230,7 +230,7 @@ writeglyphs()
 		width = htons((uint16_t)glyph->width);
 		fwrite(&width, sizeof(uint16_t), 1, stdout);
 
-		length = htons((uint16_t)glyph->length);
+		length = htons((uint16_t)glyph->cmdlen);
 		fwrite(&length, sizeof(uint16_t), 1, stdout);
 
 		writecommands(glyph);
@@ -243,9 +243,8 @@ writecommands(Glyph *glyph)
 {
 	float points[6]; /* TODO malloc? */
 	Command *cmd = glyph->commands;
-	uint32_t c = 0x00000063; /* 'c' */
-	uint32_t l = 0x0000006C; /* 'l' */
-	uint32_t m = 0x0000006D; /* 'm' */
+	uint32_t c='c', l='l', m='m';
+	swap32(&c); swap32(&l); swap32(&m);
 
 	if (cmd == NULL)
 		return;
@@ -253,15 +252,15 @@ writecommands(Glyph *glyph)
 		cmd = cmd->next; /* '->next' skips dummy */
 
 	while (cmd != NULL) {
-		points[0] = swapfloat(cmd->x0);
-		points[1] = swapfloat(cmd->y0);
+		points[0] = cmd->x0; points[1] = cmd->y0;
+		swap32(&points[0]); swap32(&points[1]);
 
 		switch (cmd->type) {
 		case curveto:
-			points[2] = swapfloat(cmd->x1);
-			points[3] = swapfloat(cmd->y1);
-			points[4] = swapfloat(cmd->x2);
-			points[5] = swapfloat(cmd->y2);
+			points[2] = cmd->x1; points[3] = cmd->y1;
+			points[4] = cmd->x2; points[5] = cmd->y2;
+			swap32(&points[2]); swap32(&points[3]);
+			swap32(&points[4]); swap32(&points[5]);
 			fwrite(&points, sizeof(float), 6, stdout);
 			fwrite(&c, sizeof(uint32_t), 1, stdout);
 			break;

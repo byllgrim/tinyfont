@@ -12,11 +12,9 @@ tinyfont specification
 +------------------+--------------------------------------------------+
 | 2,{2,2}          | maplength, {codepoint, offset}                   |
 +------------------+--------------------------------------------------+
-| 2,2,2,{12|12|28} | codepoint, glyphwidth, length, {xym|xyl|xyxyxyc} |
+| 2,2,2,[12|12|28] | codepoint, glyphwidth, cmdlen, [xym|xyl|xyxyxyc] |
 +------------------+--------------------------------------------------+
-All values are in big endian, except 'c', 'l', 'm' are LE uint32_t.
+All values are in big endian;
 Text is in utf-8.
-CodePoints are integers in Unicode BMP.
 Offset is from end of map.
 Point coordinates are in IEEE 754 "Binary32".
-Glyphlength is length from start of glyph entry.
