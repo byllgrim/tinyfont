@@ -234,20 +234,48 @@ Spline *
 parsecommands(int len)
 {
 	int i;
-	float x0, y0;
+	float f, x0, y0;
 	float *cmd = ecalloc(len*4, sizeof(float));
+	Spline *new, *first, *splines;
+	first = splines = malloc(sizeof(Spline)); /* dummy */
 	fread(cmd, 1, len*4, fontfile);
-printf("len: %d\n", len);
 
-	for (i = 0; i < len;) {
-		x0 = cmd[i++]; y0 = cmd[i++];
-		swap32(&x0); swap32(&y0); /* TODO this assumes LE */
-		printf("x0: %f\ty0: %f\n", x0, y0);
-		/* TODO interpret coordinates and store it */
+	for (i = 0; i < len; i++) {
+		f = cmd[i];
+		swap32(&f); /* TODO this assumes LE */
+
+		switch (*(char*)&f) {
+		case 'c':
+			new = malloc(sizeof(Spline));
+			new->y3 = cmd[i-1]; new->x3 = cmd[i-2];
+			new->y2 = cmd[i-3]; new->x2 = cmd[i-4];
+			new->y1 = cmd[i-5]; new->x1 = cmd[i-6];
+			new->y0 = y0; new->x0 = x0;
+			swap32(&(new->x1)); swap32(&(new->y1));
+			swap32(&(new->x2)); swap32(&(new->y2));
+			swap32(&(new->x3)); swap32(&(new->y3));
+			splines->next = new;
+			splines = new;
+			x0 = new->x3; y0 = new->y3;
+			break;
+		case 'l':
+			new = malloc(sizeof(Spline));
+			new->y0 = y0; new->x0 = x0;
+			new->x1 = new->y1 = new->x2 = new->y2 = -1;
+			new->y3 = cmd[i-1]; new->x3 = cmd[i-2];
+			swap32(&(new->x3)); swap32(&(new->y3));
+			splines->next = new;
+			splines = new;
+			x0 = new->x3; y0 = new->y3;
+			break;
+		case 'm':
+			y0 = cmd[i-1]; x0 = cmd[i-2];
+			swap32(&x0); swap32(&y0);
+		}
 	}
 
 	free(cmd);
-	return NULL; /* TODO */
+	return first;
 }
 
 int
