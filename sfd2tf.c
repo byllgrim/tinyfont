@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utf.h>
 
 /* Types */
 enum {curveto, lineto, moveto}; /* command type */
@@ -20,7 +21,7 @@ struct Command {
 
 typedef struct Glyph Glyph;
 struct Glyph {
-	int codepoint; /* TODO uint16_t ? */
+	Rune rune;
 	int width;
 	int cmdlen; /* length in bytes */
 	Command *commands;
@@ -99,7 +100,7 @@ parseglyph()
 
 	fgets(strbuf, BUFSIZ, stdin);
 	strtok(strbuf, " "); strtok(NULL, " ");
-	glyph->codepoint = atoi(strtok(NULL, " "));
+	glyph->rune = atoi(strtok(NULL, " "));
 
 	fgets(strbuf, BUFSIZ, stdin);
 	strtok_r(strbuf, " ", &end);
@@ -198,7 +199,7 @@ void
 writemap()
 {
 	int i;
-	uint16_t maplength, n_maplength, codepoint, offset, n_offset;
+	uint16_t maplength, n_maplength, rune, offset, n_offset;
 	Glyph *glyph = firstglyph->next; /* first is dummy */
 
 	maplength = (uint16_t)(glyphcount * 4); /* 4 = bytes/entry */
@@ -206,8 +207,8 @@ writemap()
 	fwrite(&n_maplength, sizeof(uint16_t), 1, stdout);
 
 	for (offset = i = 0; i < glyphcount; i++) {
-		codepoint = htons((uint16_t)glyph->codepoint);
-		fwrite(&codepoint, sizeof(uint16_t), 1, stdout);
+		rune = htons((uint16_t)glyph->rune);
+		fwrite(&rune, sizeof(uint16_t), 1, stdout);
 
 		n_offset = htons(offset);
 		fwrite(&n_offset, sizeof(uint16_t), 1, stdout);
@@ -220,12 +221,12 @@ writemap()
 void
 writeglyphs()
 {
-	uint16_t codepoint, width, length;
+	uint16_t rune, width, length;
 	Glyph *glyph = firstglyph->next; /* skip the dummy */
 
 	while (glyph) {
-		codepoint = htons((uint16_t)glyph->codepoint);
-		fwrite(&codepoint, sizeof(uint16_t), 1, stdout);
+		rune = htons((uint16_t)glyph->rune);
+		fwrite(&rune, sizeof(uint16_t), 1, stdout);
 
 		width = htons((uint16_t)glyph->width);
 		fwrite(&width, sizeof(uint16_t), 1, stdout);

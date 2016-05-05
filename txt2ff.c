@@ -207,15 +207,15 @@ void
 loadglyph(Rune p)
 {
 	Spline *splines;
-	uint16_t codepoint, width, cmdlen;
+	uint16_t rune, width, cmdlen;
 	long offset;
 	/* TODO what if the glyph is already loaded? */
 
 	offset = getoffset(p);
 	fseek(fontfile, offset, SEEK_SET);
 
-	fread(&codepoint, sizeof(uint16_t), 1, fontfile);
-	codepoint = ntohs(codepoint);
+	fread(&rune, sizeof(uint16_t), 1, fontfile);
+	rune = ntohs(rune);
 
 	fread(&width, sizeof(uint16_t), 1, fontfile);
 	width = ntohs(width);
@@ -223,7 +223,7 @@ loadglyph(Rune p)
 	fread(&cmdlen, sizeof(uint16_t), 1, fontfile);
 	cmdlen = ntohs(cmdlen)/4;
 	splines = parsecommands(cmdlen);
-	addglyph(newglyph((Rune)codepoint, (int)width, splines));
+	addglyph(newglyph((Rune)rune, (int)width, splines));
 }
 
 long
