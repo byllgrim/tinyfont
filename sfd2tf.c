@@ -223,7 +223,7 @@ writeglyphs()
 	uint16_t codepoint, width, length;
 	Glyph *glyph = firstglyph->next; /* skip the dummy */
 
-	while (glyph != NULL) {
+	while (glyph) {
 		codepoint = htons((uint16_t)glyph->codepoint);
 		fwrite(&codepoint, sizeof(uint16_t), 1, stdout);
 
@@ -246,12 +246,12 @@ writecommands(Glyph *glyph)
 	uint32_t c='c', l='l', m='m';
 	swap32(&c); swap32(&l); swap32(&m);
 
-	if (cmd == NULL)
+	if (!cmd)
 		return;
 	else
 		cmd = cmd->next; /* '->next' skips dummy */
 
-	while (cmd != NULL) {
+	while (cmd) {
 		points[0] = cmd->x0; points[1] = cmd->y0;
 		swap32(&points[0]); swap32(&points[1]);
 
