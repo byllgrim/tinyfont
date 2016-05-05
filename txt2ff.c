@@ -127,18 +127,18 @@ readheader()
 void
 readmap()
 {
-	uint16_t length, *map;
+	uint16_t maplen, *map;
 	int i, rune;
 	long offset;
 
 	fread(buf, sizeof(uint16_t), 1, fontfile);
-	length = ntohs(*(uint16_t *)buf);
-	glyphcount = length/4;
+	maplen = ntohs(*(uint16_t *)buf);
+	glyphcount = maplen/4;
 	om = newoffsetmap(glyphcount);
 
-	map = ecalloc(length/2, sizeof(uint16_t));
-	fread(map, sizeof(uint16_t), length/2, fontfile);
-	for (i = 0; i < glyphcount; i+=2) {
+	map = ecalloc(maplen/2, sizeof(uint16_t));
+	fread(map, sizeof(uint16_t), maplen/2, fontfile);
+	for (i = 0; i < maplen/2; i+=2) {
 		rune = (int)ntohs(map[i]);
 		offset = (long)ntohs(map[i+1]);
 		addoffsetentry(om, newoffsetentry(rune, offset));

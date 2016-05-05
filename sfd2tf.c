@@ -211,7 +211,7 @@ writemap()
 
 		n_offset = htons(offset);
 		fwrite(&n_offset, sizeof(uint16_t), 1, stdout);
-		offset += glyph->cmdlen;
+		offset += glyph->cmdlen + 6; /* sizeof(header) = 6 */
 
 		glyph = glyph->next;
 	}
