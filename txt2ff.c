@@ -52,6 +52,8 @@ static void readglyphs();
 static void loadglyph(Rune p);
 static long getoffset(Rune p);
 static Spline *parsecommands(int len);
+static Glyph *newglyph(Rune p, int w, Spline *s);
+static void addglyph(Glyph *g);
 
 /* Global variables */
 static char *buf;
@@ -213,7 +215,7 @@ loadglyph(Rune p)
 	fread(&cmdlen, sizeof(uint16_t), 1, fontfile);
 	cmdlen = ntohs(cmdlen)/4;
 	splines = parsecommands(cmdlen);
-	/* TODO addglyph(codepoint, width, splines) */
+	addglyph(newglyph((Rune)codepoint, (int)width, splines));
 }
 
 long
@@ -276,6 +278,31 @@ parsecommands(int len)
 
 	free(cmd);
 	return first;
+}
+
+Glyph *
+newglyph(Rune p, int w, Spline *s)
+{
+	Glyph *g = ecalloc(1, sizeof(Glyph));
+	g->p = p;
+	g->width = w;
+	g->splines = s;
+	return g;
+}
+
+void
+addglyph(Glyph *g)
+{
+	Glyph **map = gm->map;
+	int rune, index, len;
+	rune = g->p;
+	len = gm->len;
+	index = rune % len;
+
+	while (map[index] && map[index]->p != rune)
+		index++;
+
+	map[index] = g;
 }
 
 int
