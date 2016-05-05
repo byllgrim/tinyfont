@@ -173,8 +173,16 @@ addoffsetentry(OffsetMap *om, OffsetEntry *oe)
 	len = om->len;
 	index = rune % len;
 
-	while (map[index] && map[index]->rune != rune)
-		index++;
+	while (1) {
+		if (map[index] && map[index]->rune != rune) {
+			if (index == (len - 1))
+				index = 0;
+			else
+				index++;
+		}
+		if (!map[index] || (map[index] && map[index]->rune == rune))
+			break;
+	}
 
 	map[index] = oe;
 }
