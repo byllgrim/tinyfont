@@ -39,10 +39,17 @@ typedef struct {
 	Glyph **map;
 } GlyphMap;
 
+typedef struct {
+	int w;
+	int h;
+	char **pxl; /* row-aligned */
+} Image;
+
 /* Function declarations */
 static void swap32(void *a);
 static void die(const char *errstr, ...);
 static void *ecalloc(size_t nmemb, size_t size);
+
 static void readheader();
 static void readmap();
 static OffsetMap *newoffsetmap(int length);
@@ -55,16 +62,22 @@ static Spline *parsecommands(int len);
 static Glyph *newglyph(Rune p, int w, Spline *s);
 static void addglyph(Glyph *g);
 
+static void render();
+static void initimage();
+static Glyph *getglyph(Rune p);
+
 /* Global variables */
 static char *buf;
 static char *txt;
 static FILE *fontfile;
 static OffsetMap *om;
 static GlyphMap *gm;
+static Image *img;
 static int em;
 static int px;
 static int glyphcount;
 static long glyphsoffset;
+static double scale;
 
 /* Function definitions */
 void
@@ -122,6 +135,7 @@ readheader()
 
 	fread(buf, sizeof(uint16_t), 1, fontfile);
 	em = (int)ntohs(*(uint16_t *)buf);
+	scale = ((double)px)/em;
 }
 
 void
@@ -237,6 +251,7 @@ getoffset(Rune p)
 	while (map[index] && map[index]->rune != p)
 		index++;
 
+	/* TODO should properly handle out of bounds instead of this */
 	return index < len ? map[index]->offset + glyphsoffset : -1;
 }
 
@@ -313,6 +328,52 @@ addglyph(Glyph *g)
 	map[index] = g;
 }
 
+void
+render()
+{
+	initimage();
+	/* drawsplines() */
+}
+
+void
+initimage()
+{
+	int width = 0, i; /* TODO does one need to say '= 0' explicitly? */
+	Rune p;
+	Glyph *g;
+	char *s = txt;
+
+	img = ecalloc(1, sizeof(Image));
+	img->h = px;
+	img->pxl = ecalloc(px, sizeof(char *));
+
+	while (*s) {
+		s += chartorune(&p, s);
+		if ((g = getglyph(p)))
+			width += scale*(g->width);
+	}
+	img->w = width;
+
+	for (i = 0; i < px; i++) {
+		img->pxl[i] = ecalloc(width, sizeof(char));
+	}
+}
+
+Glyph *
+getglyph(Rune p)
+{
+	Glyph **map = gm->map;
+	int len, index;
+	len = gm->len;
+	index = p % len;
+
+	while (map[index] && map[index]->p != p)
+		index++;
+
+	/* TODO handle outofbounds separate from nonexistant glyph */
+	return index < len ? map[index] : NULL;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -328,7 +389,7 @@ main(int argc, char *argv[])
 	readheader();
 	readmap();
 	readglyphs();
-	/*render();*/
+	render();
 	/*writefile();*/
 
 	return EXIT_SUCCESS;
