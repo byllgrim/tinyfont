@@ -62,9 +62,12 @@ static Spline *parsecommands(int len);
 static Glyph *newglyph(Rune p, int w, Spline *s);
 static void addglyph(Glyph *g);
 
-static void render();
 static void initimage();
 static Glyph *getglyph(Rune p);
+static void drawglyphs();
+static void drawsplines(Spline *s, int hshift);
+static void drawline(Spline *s, int hshift);
+static void drawcurve(Spline *s, int hshift);
 
 /* Global variables */
 static char *buf;
@@ -286,7 +289,7 @@ parsecommands(int len)
 		case 'l':
 			new = malloc(sizeof(Spline));
 			new->y0 = y0; new->x0 = x0;
-			new->x1 = new->y1 = new->x2 = new->y2 = -1;
+			new->x1 = new->y1 = new->x2 = new->y2 = 0; /* -1 ? */
 			new->y3 = cmd[i-1]; new->x3 = cmd[i-2];
 			swap32(&(new->x3)); swap32(&(new->y3));
 			splines->next = new;
@@ -329,13 +332,6 @@ addglyph(Glyph *g)
 }
 
 void
-render()
-{
-	initimage();
-	/* drawsplines() */
-}
-
-void
 initimage()
 {
 	int width = 0, i; /* TODO does one need to say '= 0' explicitly? */
@@ -374,6 +370,47 @@ getglyph(Rune p)
 	return index < len ? map[index] : NULL;
 }
 
+void
+drawglyphs()
+{
+	int hshift = 0;
+	Rune p;
+	Glyph *g;
+	char *s = txt;
+
+	while (*s) {
+		s += chartorune(&p, s);
+		if ((g = getglyph(p))) {
+			drawsplines(g->splines, hshift);
+			hshift += scale*(g->width);
+		}
+	}
+}
+
+void
+drawsplines(Spline *s, int hshift)
+{
+	while ((s = s->next)) { /* first run deliberately skips dummy */
+		if (!s->x1 && !s->y1 && !s->x2 && !s->y2)
+			drawline(s, hshift);
+		else
+			drawcurve(s, hshift);
+	}
+}
+
+void
+drawline(Spline *s, int hshift)
+{
+	printf("(%f,%f) lineto (%f,%f)\n", s->x0, s->y0, s->x3, s->y3);
+}
+
+void
+drawcurve(Spline *s, int hshift)
+{
+	printf("(%f,%f) curveto (%f,%f) (%f,%f) (%f,%f)\n",
+	       s->x0, s->y0, s->x1, s->y1, s->x2, s->y2, s->x3, s->y3);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -389,8 +426,10 @@ main(int argc, char *argv[])
 	readheader();
 	readmap();
 	readglyphs();
-	render();
-	/*writefile();*/
+	initimage();
+	drawglyphs();
+	/* fillshapes(); */
+	/* writefile(); */
 
 	return EXIT_SUCCESS;
 }
