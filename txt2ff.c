@@ -8,6 +8,10 @@
 #include <string.h>
 #include <utf.h>
 
+/* Macros */
+#define MIN(a, b)               ((a) < (b) ? (a) : (b))
+#define MAX(a, b)               ((a) < (b) ? (b) : (a))
+
 /* Types */
 typedef struct {
 	int rune;
@@ -59,6 +63,7 @@ static void readglyphs();
 static void loadglyph(Rune p);
 static long getoffset(Rune p);
 static Spline *parsecommands(int len);
+static void maxminy(Spline *s);
 static Glyph *newglyph(Rune p, int w, Spline *s);
 static void addglyph(Glyph *g);
 
@@ -81,6 +86,8 @@ static GlyphMap *gm;
 static Image *img;
 static int em;
 static int px;
+static int maxy;
+static int miny;
 static int glyphcount;
 static long glyphsoffset;
 static double scale;
@@ -144,6 +151,8 @@ readheader()
 	fread(buf, sizeof(uint16_t), 1, fontfile);
 	em = (int)ntohs(*(uint16_t *)buf);
 	scale = ((double)px)/em;
+	maxy = px;
+	miny = 0;
 }
 
 void
@@ -290,6 +299,7 @@ parsecommands(int len)
 			splines->next = new;
 			splines = new;
 			x0 = new->x3; y0 = new->y3;
+			maxminy(new);
 			break;
 		case 'l':
 			new = malloc(sizeof(Spline));
@@ -300,6 +310,7 @@ parsecommands(int len)
 			splines->next = new;
 			splines = new;
 			x0 = new->x3; y0 = new->y3;
+			maxminy(new);
 			break;
 		case 'm':
 			y0 = cmd[i-1]; x0 = cmd[i-2];
@@ -308,7 +319,21 @@ parsecommands(int len)
 	}
 
 	free(cmd);
+	splines->next = NULL;
 	return first;
+}
+
+void
+maxminy(Spline *s)
+{
+	maxy = MAX(maxy, scale*s->y0);
+	maxy = MAX(maxy, scale*s->y1);
+	maxy = MAX(maxy, scale*s->y2);
+	maxy = MAX(maxy, scale*s->y3);
+	miny = MIN(miny, scale*s->y0);
+	miny = MIN(miny, scale*s->y1);
+	miny = MIN(miny, scale*s->y2);
+	miny = MIN(miny, scale*s->y3);
 }
 
 Glyph *
@@ -345,8 +370,8 @@ initimage()
 	char *s = txt;
 
 	img = ecalloc(1, sizeof(Image));
-	img->h = px;
-	img->pxl = ecalloc(px, sizeof(char *));
+	img->h = maxy - miny + 1;
+	img->pxl = ecalloc(img->h, sizeof(char *));
 
 	while (*s) {
 		s += chartorune(&p, s);
@@ -355,7 +380,7 @@ initimage()
 	}
 	img->w = width;
 
-	for (i = 0; i < px; i++) {
+	for (i = 0; i < img->h; i++) {
 		img->pxl[i] = ecalloc(width, sizeof(char));
 	}
 }
@@ -417,9 +442,8 @@ drawline(Spline *s, int hshift)
 		x = x0*(1-t) + x3*t;
 		y = y0*(1-t) + y3*t;
 		x = (scale*x)+hshift;
-		y = scale*y;
-		img->pxl[(int)(h-y)][(int)x] = 1;
-		/* TODO h-1-y ? */
+		y = ((px-1)-scale*y);
+		img->pxl[(int)(y)][(int)x] = 1;
 	}
 }
 
@@ -441,8 +465,8 @@ drawcurve(Spline *s, int hshift)
 		x = x0*d3 + x1*3*t1*d2 + x2*3*t2*d1 + x3*t3;
 		y = y0*d3 + y1*3*t1*d2 + y2*3*t2*d1 + y3*t3;
 		x = (scale*x)+hshift;
-		y = scale*y;
-		img->pxl[(int)(h-1-y)][(int)x] = 1;
+		y = ((px-1) - (scale*y));
+		img->pxl[(int)(y)][(int)x] = 1;
 	}
 }
 
