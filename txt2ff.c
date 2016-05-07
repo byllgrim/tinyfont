@@ -406,14 +406,44 @@ drawsplines(Spline *s, int hshift)
 void
 drawline(Spline *s, int hshift)
 {
-	printf("(%f,%f) lineto (%f,%f)\n", s->x0, s->y0, s->x3, s->y3);
+	int i, h;
+	float t, x, y, x0, y0, x3, y3;
+	x0 = s->x0; y0 = s->y0;
+	x3 = s->x3; y3 = s->y3;
+	h = img->h;
+
+	for (i = 0; i < h; i++) {
+		t = ((float)i)/h;
+		x = x0*(1-t) + x3*t;
+		y = y0*(1-t) + y3*t;
+		x = (scale*x)+hshift;
+		y = scale*y;
+		img->pxl[(int)(h-y)][(int)x] = 1;
+		/* TODO h-1-y ? */
+	}
 }
 
 void
 drawcurve(Spline *s, int hshift)
 {
-	printf("(%f,%f) curveto (%f,%f) (%f,%f) (%f,%f)\n",
-	       s->x0, s->y0, s->x1, s->y1, s->x2, s->y2, s->x3, s->y3);
+	int i, h, step;
+	float d1, d2, d3, t1, t2, t3, x, y, x0, y0, x1, y1, x2, y2, x3, y3;
+	h = img->h;
+	step = h*2;
+	x0 = s->x0; y0 = s->y0;
+	x1 = s->x1; y1 = s->y1;
+	x2 = s->x2; y2 = s->y2;
+	x3 = s->x3; y3 = s->y3;
+
+	for (i = 0; i < step; i++) {
+		t1 = ((float)i)/step; t2 = t1*t1; t3 = t1*t2;
+		d1 = (1-t1); d2 = d1*d1; d3 = d1*d2;
+		x = x0*d3 + x1*3*t1*d2 + x2*3*t2*d1 + x3*t3;
+		y = y0*d3 + y1*3*t1*d2 + y2*3*t2*d1 + y3*t3;
+		x = (scale*x)+hshift;
+		y = scale*y;
+		img->pxl[(int)(h-1-y)][(int)x] = 1;
+	}
 }
 
 void
