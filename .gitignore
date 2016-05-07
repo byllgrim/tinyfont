@@ -1,5 +1,6 @@
-# Fonts
+# Fonts and images
 *.tf
+*.ff
 
 # Object files
 *.o

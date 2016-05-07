@@ -69,10 +69,13 @@ static void drawsplines(Spline *s, int hshift);
 static void drawline(Spline *s, int hshift);
 static void drawcurve(Spline *s, int hshift);
 
+static void writefile();
+
 /* Global variables */
 static char *buf;
 static char *txt;
 static FILE *fontfile;
+static FILE *outfile;
 static OffsetMap *om;
 static GlyphMap *gm;
 static Image *img;
@@ -81,6 +84,8 @@ static int px;
 static int glyphcount;
 static long glyphsoffset;
 static double scale;
+static uint16_t white[4] = {-1, -1, -1, -1};
+static uint16_t black[4] = {0, 0, 0, -1};
 
 /* Function definitions */
 void
@@ -411,13 +416,38 @@ drawcurve(Spline *s, int hshift)
 	       s->x0, s->y0, s->x1, s->y1, s->x2, s->y2, s->x3, s->y3);
 }
 
+void
+writefile()
+{
+	int i, j;
+	uint32_t width, height;
+	char magic[8] = "farbfeld";
+
+	fwrite(magic, sizeof(char), 8, outfile);
+	width = htonl((uint32_t)img->w);
+	height = htonl((uint32_t)img->h);
+	fwrite(&width, sizeof(uint32_t), 1, outfile);
+	fwrite(&height, sizeof(uint32_t), 1, outfile);
+
+	for (i = 0; i < img->h; i++) {
+		for (j = 0; j < img->w; j++) {
+			if (!img->pxl[i][j])
+				fwrite(&white, sizeof(uint16_t), 4, outfile);
+			else
+				fwrite(&black, sizeof(uint16_t), 4, outfile);
+		}
+	}
+}
+
 int
 main(int argc, char *argv[])
 {
 	if (argc != 4)
 		die("usage: txt2ff fontfile px string\n");
 	if (!(fontfile = fopen(argv[1], "r")))
-		die("failed to open file\n");
+		die("failed to open fontfile\n");
+	if (!(outfile = fopen("txt.ff", "w")))
+		die("failed to open outfile\n");
 
 	px = atoi(argv[2]);
 	txt = argv[3];
@@ -429,7 +459,7 @@ main(int argc, char *argv[])
 	initimage();
 	drawglyphs();
 	/* fillshapes(); */
-	/* writefile(); */
+	writefile();
 
 	return EXIT_SUCCESS;
 }
