@@ -1,0 +1,186 @@
+New Format
+==========
+Present font formats sucks.
+
+Font server?
+Bold: Is included in file or can be emulated with stroke density?
+Weight?
+UnderlinePosition? UnderlineWidth?
+.notdef ?
+Refer?
+px scales pixels from 0 to ascent.
+
+SEE TINYFONT
+
+Rationale
+---------
+Ascent, descent: Only nedded for sourceformat(such as .sfd) not publishformat.
+Combining characters: Doesn't save much space.
+CreationTime/ModificationTime: Not needed.
+FontName and such: Substitution is done is separate configuration files.
+Italic: Can be a fixed value. Does each font need to specify?
+Kerning, hinting, ligatures: Marginal gain for high cost.
+
+Name suggestions
+----------------
+*face
+*font
+*type
+glyph*
+  glyphbox
+nicefont
+suckfont
+tiny*
+  tinyfont
+  tinytype
+fontfaen
+
+Existing software that suck
+===========================
+cairo: html formatting, vector graphics, etc
+dtext: uses libX11 and freetype
+fontconfig: Use xml. Only substitutes. Compansates for shitty file hierarchies
+fontforge: uses cairo, fontconfig, freetype, pango
+freetype: autohell
+harfbuzz: C++; only renders glyphs, does no layout text?
+libdrw: uses xft and fontconfig
+libX11: Is X old, rotten and unmendable? Needs libXft
+libXft: uses freetype
+pango: uses harfbuzz and cairo
+
+Existing formats
+================
+Apple Advanced Typography: ????
+Compact Font Format: Used in OpenType.
+Graphite (SIL): Extension of truetype?
+Open Font Format: ISO standard equivalent to OpenType.
+OpenType: gigabloat. vulnerable.
+Portable Font Resource: Where's the specification? Closed source?
+Printer Font ASCII: Type 1 ascii ????
+PS Type 0: Used for collecting many sub-fonts [Type 1, 2 or 3]
+PS Type 1: Only 256 glyphs may be encoded?
+PS Type 2: Used within OpenType fonts with CFF.
+PS Type 3: Full postscript within the font.
+SFNT: Generic format for font tables. Used by truetype, opentype, X11 bitmap...
+SING Glyphlet: ????
+Spline Font Database: Somewhat clean. Big. Rotten by embedding crap formats.
+SVG font: Big and xml-based.
+TrueDoc: same as Portable Font Resource.
+TrueType: Overly complex.  Bytecode in hinting.
+Type42: TrueType wrapped up in PostScript. Opposite of OpenType?
+Unified Font Object: Very big! Plist and xml. Nicely organized.
+Web Open Font: Useless. It's just compression of existing formats.
+
+Features
+========
+Antialiasing
+Color
+Contrasting
+Hinting
+Kerning
+Ligatures
+Lookups
+Subpixel rendering
+Typefaces
+Unicode
+Subroutinization
+
+Keywords
+========
+Accessing fonts
+Advance width
+Anchor
+Ascent
+Backend (farbfeld)
+Baseline
+Bezier curves (Cubic vs Quadratic)
+Bi-Directional text
+Cap height
+Control point
+Descent
+EM Square, em size, UPM
+Encoding
+Even/Odd fill rule
+Font access (Responsibility)
+Font size
+Font style
+Glyph
+Glyph fitting
+Grapheme
+LineCap
+LineJoin
+Lookups
+Metrics
+Outline
+Overshoot
+Point size
+Rasterizing glyphs
+Side bearing
+SmartFont
+SplineChar
+SplinePoint
+SplinePointList
+SplineSet
+Spiro
+StrokeStyle
+x-height
+
+Quotes
+======
+"The Mac OS Quartz technology ignores font hinting completely and renders all
+fonts equally well regardless of their font format."
+
+"Subpixel rendering takes advantage of the way your eyes perceive colour, using
+shades of blue, red and green to simulate higher screen resolution in
+horizontal direction."
+
+"It is clear that one day font hinting will finally become obsolete, but it is
+not clear when that day will come."
+
+"The FreeType build system  _exclusively_ works with GNU Make.". It also uses
+autogen and libpng.
+
+"Apart from a standard ANSI C library, FreeType doesn't have any external
+dependencies and can be compiled and installed on its own on any kind of
+system."
+
+"The design of FreeType is based on modules that can be either linked statically
+to the library at compile time, or loaded on demand at runtime."
+
+"On average OT/CFF font files are 20% to 50% smaller than comparable
+TrueType fonts"
+
+"In TrueType the hinting “intelligence” resides in each font, whereas in
+OpenType/CFF the intelligence is mainly in the rasterizer."
+
+"In an OpenType font, the UPM – or em size is usually set at 1000 units.
+In TrueType fonts, the UPM is by convention a power of two, generally set
+to 1024 or 2048."
+
+"FontForge closely follows the OpenType Specification." in regard to font info
+
+"FontForge can export your font to a variety of different formats, but
+in practice only two are important:
+TrueType (which is found with the .ttf filename extension) and
+OpenType CFF (which is found with the .otf extension).
+Technically the OpenType format can encompass a range of other options, but
+the CFF type is the one in widespread use."
+
+"An OpenType font may contain either a TrueType or a postscript font inside it."
+
+"For many purposes, such as layout, it doesn't matter what the outline data
+format is, but for some purposes, such as rasterisation, it is significant."
+
+"Most implementations of PostScript use single-precision reals
+(24-bit mantissa)"
+
+"The Fixed point format consists of a signed, 2’s complement mantissa and an unsigned fraction. To compute the actual value, take the mantissa and add the fraction." - TrueType specification
+
+"Question: 1.2 Can the fonts be included with Free/Libre and Open Source Software collections such as GNU/Linux and BSD distributions and repositories?
+Answer: Yes! Fonts licensed under the OFL can be freely included alongside other software under FLOSS (Free/Libre and Open Source Software) licenses." - SIL OFL
+
+"Question: 3.1 Can I change the fonts? Are there any limitations to what things I can and cannot change?
+Answer: You are allowed to change anything, as long as such changes do not violate the terms of the license. In other words, you are not allowed to remove the copyright statement(s) from the font, but you could put additional information into it that covers your contribution." - SIL OFL
+
+"Question: 3.7 If a trademark is claimed in the OFL font, does that trademark need to remain in modified fonts?
+Answer: Yes. Any trademark notices must remain in any derivative fonts to respect trademark laws, but you may add any additional trademarks you claim, officially registered or not." - SIL OFL
