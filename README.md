@@ -1,6 +1,11 @@
 # tinyfont
-A new font format for publishing (not editing) fonts, and a reference implementation.
+Inspired by the image format 'farbfeld', this was an attempt to create
+a publishing format (not editing) for fonts.
 
-It is inspired by the image format 'farbfeld'.
+It was obviously way beyond my capabilities, but i got some interesting results.
 
-The name 'tinyfont' is not definite. It may be changed.
+# Try it
+Build the programs with `$ make` and run it as follows:
+`$ ./sfd2tf < ~/downloads/Inconsolata.sfd > Inconsolata.tf`
+`$ ./txt2ff Inconsolata.tf 48 tinyfont`
+`$ lel txt.ff`
