@@ -4,6 +4,9 @@ a publishing format (not editing) for fonts.
 
 It was obviously way beyond my capabilities, but i got some interesting results.
 
+# Dependencies
+http://git.suckless.org/libutf/
+
 # Try it
 Build the programs with `$ make` and run it as follows:
 
