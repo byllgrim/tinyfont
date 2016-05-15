@@ -54,12 +54,12 @@ static void swap32(void *a);
 static void die(const char *errstr, ...);
 static void *ecalloc(size_t nmemb, size_t size);
 
-static void readheader();
-static void readmap();
+static void readheader(void);
+static void readmap(void);
 static OffsetMap *newoffsetmap(int length);
 static OffsetEntry *newoffsetentry(int rune, long offset);
 static void addoffsetentry(OffsetMap *om, OffsetEntry *oe);
-static void readglyphs();
+static void readglyphs(void);
 static void loadglyph(Rune p);
 static long getoffset(Rune p);
 static Spline *parsecommands(int len);
@@ -67,9 +67,9 @@ static void maxminy(Spline *s);
 static Glyph *newglyph(Rune p, int w, Spline *s);
 static void addglyph(Glyph *g);
 
-static void initimage();
+static void initimage(void);
 static Glyph *getglyph(Rune p);
-static void drawglyphs();
+static void drawglyphs(void);
 static void drawsplines(Spline *s, int hshift);
 static void drawline(Spline *s, int hshift);
 static void drawcurve(Spline *s, int hshift);
@@ -136,7 +136,7 @@ ecalloc(size_t nmemb, size_t size)
 }
 
 void
-readheader()
+readheader(void)
 {
 	uint16_t skip;
 
@@ -156,7 +156,7 @@ readheader()
 }
 
 void
-readmap()
+readmap(void)
 {
 	uint16_t maplen, *map;
 	int i, rune;
@@ -219,7 +219,7 @@ addoffsetentry(OffsetMap *om, OffsetEntry *oe)
 }
 
 void
-readglyphs()
+readglyphs(void)
 {
 	char *s = txt;
 	Rune p;
@@ -362,7 +362,7 @@ addglyph(Glyph *g)
 }
 
 void
-initimage()
+initimage(void)
 {
 	int width = 0, i; /* TODO does one need to say '= 0' explicitly? */
 	Rune p;
@@ -401,7 +401,7 @@ getglyph(Rune p)
 }
 
 void
-drawglyphs()
+drawglyphs(void)
 {
 	int hshift = 0;
 	Rune p;
@@ -471,7 +471,7 @@ drawcurve(Spline *s, int hshift)
 }
 
 void
-writefile()
+writefile(void)
 {
 	int i, j;
 	uint32_t width, height;
