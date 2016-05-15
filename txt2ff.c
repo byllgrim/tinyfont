@@ -77,7 +77,7 @@ static void drawcurve(Spline *s, int hshift);
 static void writefile();
 
 /* Global variables */
-static char *buf;
+static char buf[BUFSIZ];
 static char *txt;
 static FILE *fontfile;
 static FILE *outfile;
@@ -505,7 +505,6 @@ main(int argc, char *argv[])
 
 	px = atoi(argv[2]);
 	txt = argv[3];
-	buf = ecalloc(1, BUFSIZ); /* TODO is it opposite? */
 
 	readheader();
 	readmap();
