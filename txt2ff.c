@@ -13,6 +13,11 @@
 #define MAX(a, b)               ((a) < (b) ? (b) : (a))
 
 /* Types */
+typedef union {
+	char c[BUFSIZ];
+	uint16_t i;
+} Buf;
+
 typedef struct {
 	int rune;
 	long offset;
@@ -77,7 +82,7 @@ static void drawcurve(Spline *s, int hshift);
 static void writefile();
 
 /* Global variables */
-static char buf[BUFSIZ];
+static Buf buf;
 static char *txt;
 static FILE *fontfile;
 static FILE *outfile;
@@ -140,16 +145,16 @@ readheader(void)
 {
 	uint16_t skip;
 
-	fread(buf, sizeof(char), 8, fontfile);
-	if (strncmp(buf, "tinyfont", 8))
+	fread(buf.c, sizeof(char), 8, fontfile);
+	if (strncmp(buf.c, "tinyfont", 8))
 		die("not a tinyfont file\n");
 
-	fread(buf, sizeof(uint16_t), 1, fontfile);
-	skip = ntohs(*(uint16_t *)buf);
+	fread(buf.c, sizeof(uint16_t), 1, fontfile);
+	skip = ntohs(buf.i);
 	fseek(fontfile, (long)skip, SEEK_CUR); /* copyright */
 
-	fread(buf, sizeof(uint16_t), 1, fontfile);
-	em = (int)ntohs(*(uint16_t *)buf);
+	fread(buf.c, sizeof(uint16_t), 1, fontfile);
+	em = (int)ntohs(buf.i);
 	scale = ((double)px)/em;
 	maxy = px;
 	miny = 0;
@@ -162,8 +167,8 @@ readmap(void)
 	int i, rune;
 	long offset;
 
-	fread(buf, sizeof(uint16_t), 1, fontfile);
-	maplen = ntohs(*(uint16_t *)buf);
+	fread(buf.c, sizeof(uint16_t), 1, fontfile);
+	maplen = ntohs(buf.i);
 	glyphcount = maplen/4;
 	om = newoffsetmap(glyphcount);
 
