@@ -31,13 +31,13 @@ struct Glyph {
 /* Function declarations */
 static void swap32(void *a);
 static void *ecalloc(size_t nmemb, size_t size);
-static void parse();
-static void parseglyph();
-static int movetocommands();
+static void parse(void);
+static void parseglyph(void);
+static int movetocommands(void);
 static int parsecommands(Glyph *glyph);
-static void writeheader();
-static void writemap();
-static void writeglyphs();
+static void writeheader(void);
+static void writemap(void);
+static void writeglyphs(void);
 static void writecommands(Glyph *glyph);
 
 /* Global variables */
@@ -76,7 +76,7 @@ ecalloc(size_t nmemb, size_t size)
 }
 
 void
-parse()
+parse(void)
 {
 	char *end, *key;
 	key = strtok_r(strbuf, ": ", &end);
@@ -92,7 +92,7 @@ parse()
 }
 
 void
-parseglyph()
+parseglyph(void)
 {
 	char *end;
 	Glyph *glyph = ecalloc(1, sizeof(Glyph));
@@ -115,7 +115,7 @@ parseglyph()
 }
 
 int
-movetocommands()
+movetocommands(void)
 {
 	char *prev = ecalloc(1, BUFSIZ);
 
@@ -179,7 +179,7 @@ parsecommands(Glyph *glyph)
 }
 
 void
-writeheader()
+writeheader(void)
 {
 	uint16_t length, n_length, em;
 
@@ -196,7 +196,7 @@ writeheader()
 }
 
 void
-writemap()
+writemap(void)
 {
 	int i;
 	uint16_t maplength, n_maplength, rune, offset, n_offset;
@@ -219,7 +219,7 @@ writemap()
 }
 
 void
-writeglyphs()
+writeglyphs(void)
 {
 	uint16_t rune, width, length;
 	Glyph *glyph = firstglyph->next; /* skip the dummy */
@@ -289,7 +289,7 @@ main()
 
 	while (!feof(stdin)) {
 		fgets(strbuf, BUFSIZ, stdin);
-		parse(strbuf);
+		parse();
 	}
 
 	writeheader();
