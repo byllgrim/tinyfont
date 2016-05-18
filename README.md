@@ -1,8 +1,10 @@
 # tinyfont
+A file format for vector fonts.
+
 Inspired by the image format 'farbfeld', this was an attempt to create
 a publishing format (not editing) for fonts.
 
-It was obviously way beyond my capabilities, but i got some interesting results.
+It was way beyond my capabilities, but i got some interesting results.
 
 # Dependencies
 http://git.suckless.org/libutf/
