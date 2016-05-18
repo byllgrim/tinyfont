@@ -41,7 +41,6 @@ static void writeglyphs(void);
 static void writecommands(Glyph *glyph);
 
 /* Global variables */
-static char *copyright;
 static int ascent;
 static int descent;
 static char *strbuf;
@@ -83,8 +82,6 @@ parse(void)
 
 	if (!strcmp(key, "StartChar"))
 		parseglyph();
-	else if (!strcmp(key, "Copyright"))
-		strncpy(copyright, strtok(end+1, "\n"), BUFSIZ);
 	else if (!strcmp(key, "Ascent"))
 		ascent = atoi(++end);
 	else if (!strcmp(key, "Descent"))
@@ -181,14 +178,9 @@ parsecommands(Glyph *glyph)
 void
 writeheader(void)
 {
-	uint16_t length, n_length, em;
+	uint16_t em;
 
 	fwrite("tinyfont", 1, 8, stdout);
-
-	length = (uint16_t)strlen(copyright);
-	n_length = htons(length); /* TODO this assumes LE */
-	fwrite(&n_length, sizeof(uint16_t), 1, stdout);
-	fwrite(copyright, 1, length, stdout);
 
 	em = (uint16_t)(ascent+descent);
 	em = htons(em);
@@ -282,7 +274,6 @@ writecommands(Glyph *glyph)
 int
 main()
 {
-	copyright = ecalloc(1, BUFSIZ);
 	strbuf = ecalloc(1, BUFSIZ);
 	firstglyph = ecalloc(1, sizeof(Glyph)); /* TODO dummies use memory */
 	lastglyph = firstglyph;

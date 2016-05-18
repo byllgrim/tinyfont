@@ -143,15 +143,9 @@ ecalloc(size_t nmemb, size_t size)
 void
 readheader(void)
 {
-	uint16_t skip;
-
 	fread(buf.c, sizeof(char), 8, fontfile);
 	if (strncmp(buf.c, "tinyfont", 8))
 		die("not a tinyfont file\n");
-
-	fread(buf.c, sizeof(uint16_t), 1, fontfile);
-	skip = ntohs(buf.i);
-	fseek(fontfile, (long)skip, SEEK_CUR); /* copyright */
 
 	fread(buf.c, sizeof(uint16_t), 1, fontfile);
 	em = (int)ntohs(buf.i);
