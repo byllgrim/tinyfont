@@ -18,6 +18,11 @@ typedef union {
 	uint16_t i;
 } Buf;
 
+typedef union {
+	float f;
+	uint32_t i;
+} cmdtype;
+
 typedef struct {
 	int rune;
 	long offset;
@@ -275,17 +280,18 @@ Spline *
 parsecommands(int len)
 {
 	int i;
-	float f, x0, y0;
+	cmdtype t;
+	float x0, y0;
 	float *cmd = ecalloc(len*4, sizeof(float));
 	Spline *new, *first, *splines;
 	first = splines = malloc(sizeof(Spline)); /* dummy */
 	fread(cmd, 1, len*4, fontfile);
 
 	for (i = 0; i < len; i++) {
-		f = cmd[i];
-		swap32(&f); /* TODO this assumes LE */
+		t.f = cmd[i];
+		swap32(&t.f); /* TODO this assumes LE */
 
-		switch (*(char*)&f) {
+		switch (t.i) {
 		case 'c':
 			new = malloc(sizeof(Spline));
 			new->y3 = cmd[i-1]; new->x3 = cmd[i-2];
