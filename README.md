@@ -16,4 +16,4 @@ Build the programs with `$ make` and run it as follows:
 
 `$ ./txt2ff Inconsolata.tf 48 tinyfont`
 
-`$ lel txt.ff`
+`$ feh out.ff`

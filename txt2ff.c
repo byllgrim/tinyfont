@@ -505,7 +505,7 @@ main(int argc, char *argv[])
 		die("usage: txt2ff fontfile px string\n");
 	if (!(fontfile = fopen(argv[1], "r")))
 		die("failed to open fontfile\n");
-	if (!(outfile = fopen("txt.ff", "w")))
+	if (!(outfile = fopen("out.ff", "w")))
 		die("failed to open outfile\n");
 
 	px = atoi(argv[2]);
