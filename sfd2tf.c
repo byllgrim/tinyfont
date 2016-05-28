@@ -95,11 +95,11 @@ parseglyph(void)
 	Glyph *glyph = ecalloc(1, sizeof(Glyph));
 	glyph->cmdlen = 0; /* exclude sizeof glyph header */
 
-	fgets(strbuf, BUFSIZ, stdin);
+	if (!fgets(strbuf, BUFSIZ, stdin)) return;
 	strtok(strbuf, " "); strtok(NULL, " ");
 	glyph->rune = atoi(strtok(NULL, " "));
 
-	fgets(strbuf, BUFSIZ, stdin);
+	if (!fgets(strbuf, BUFSIZ, stdin)) return;
 	strtok_r(strbuf, " ", &end);
 	glyph->width = atoi(end);
 
@@ -123,11 +123,11 @@ movetocommands(void)
 		}
 
 		strncpy(prev, strbuf, BUFSIZ);
-		fgets(strbuf, BUFSIZ, stdin);
+		if (!fgets(strbuf, BUFSIZ, stdin)) break;
 	}
 
-	fgets(strbuf, BUFSIZ, stdin);
 	free(prev);
+	if (!fgets(strbuf, BUFSIZ, stdin)) return 0;
 	return 1;
 }
 
@@ -168,7 +168,7 @@ parsecommands(Glyph *glyph)
 
 		last->next = cmd;
 		last = cmd;
-		fgets(strbuf, BUFSIZ, stdin);
+		if (!fgets(strbuf, BUFSIZ, stdin)) break;
 	}
 
 	glyph->commands = first;
@@ -279,7 +279,7 @@ main()
 	lastglyph = firstglyph;
 
 	while (!feof(stdin)) {
-		fgets(strbuf, BUFSIZ, stdin);
+		if (!fgets(strbuf, BUFSIZ, stdin)) continue;
 		parse();
 	}
 

@@ -148,11 +148,11 @@ ecalloc(size_t nmemb, size_t size)
 void
 readheader(void)
 {
-	fread(buf.c, sizeof(char), 8, fontfile);
+	if (!fread(buf.c, sizeof(char), 8, fontfile)) return;
 	if (strncmp(buf.c, "tinyfont", 8))
 		die("not a tinyfont file\n");
 
-	fread(buf.c, sizeof(uint16_t), 1, fontfile);
+	if (!fread(buf.c, sizeof(uint16_t), 1, fontfile)) return;
 	em = (int)ntohs(buf.i);
 	scale = ((double)px)/em;
 	maxy = px;
@@ -166,13 +166,13 @@ readmap(void)
 	int i, rune;
 	long offset;
 
-	fread(buf.c, sizeof(uint16_t), 1, fontfile);
+	if (!fread(buf.c, sizeof(uint16_t), 1, fontfile)) return;
 	maplen = ntohs(buf.i);
 	glyphcount = maplen/4;
 	om = newoffsetmap(glyphcount);
 
 	map = ecalloc(maplen/2, sizeof(uint16_t));
-	fread(map, sizeof(uint16_t), maplen/2, fontfile);
+	if (!fread(map, sizeof(uint16_t), maplen/2, fontfile)) return;
 	for (i = 0; i < maplen/2; i+=2) {
 		rune = (int)ntohs(map[i]);
 		offset = (long)ntohs(map[i+1]);
@@ -249,13 +249,13 @@ loadglyph(Rune p)
 	offset = getoffset(p);
 	fseek(fontfile, offset, SEEK_SET);
 
-	fread(&rune, sizeof(uint16_t), 1, fontfile);
+	if (!fread(&rune, sizeof(uint16_t), 1, fontfile)) return;
 	rune = ntohs(rune);
 
-	fread(&width, sizeof(uint16_t), 1, fontfile);
+	if (!fread(&width, sizeof(uint16_t), 1, fontfile)) return;
 	width = ntohs(width);
 
-	fread(&cmdlen, sizeof(uint16_t), 1, fontfile);
+	if (!fread(&cmdlen, sizeof(uint16_t), 1, fontfile)) return;
 	cmdlen = ntohs(cmdlen)/4;
 	splines = parsecommands(cmdlen);
 	addglyph(newglyph((Rune)rune, (int)width, splines));
@@ -284,8 +284,8 @@ parsecommands(int len)
 	float x0, y0;
 	float *cmd = ecalloc(len*4, sizeof(float));
 	Spline *new, *first, *splines;
-	first = splines = malloc(sizeof(Spline)); /* dummy */
-	fread(cmd, 1, len*4, fontfile);
+	first = splines = ecalloc(1, sizeof(Spline)); /* dummy */
+	if (!fread(cmd, 1, len*4, fontfile)) return first;
 
 	for (i = 0; i < len; i++) {
 		t.f = cmd[i];
