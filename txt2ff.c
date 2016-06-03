@@ -91,7 +91,7 @@ static void drawglyphs(void);
 static void drawsplines(Spline *s, int hshift);
 static void drawline(Spline *s, int hshift);
 static void drawcurve(Spline *s, int hshift);
-static void fillrow(Spline *s, int y, int hshift);
+static void fillrow(Spline *s, int y, int width, int hshift);
 
 static Node *findroots(Spline *s, int y);
 static Node *linroot(Spline *s, int y);
@@ -434,7 +434,7 @@ drawglyphs(void)
 		if ((g = getglyph(p))) {
 			drawsplines(g->splines, hshift);
 			for (y = miny; y <= maxy; y++)
-				fillrow(g->splines, y, hshift);
+				fillrow(g->splines, y, g->width, hshift);
 			hshift += scale*(g->width);
 		}
 	}
@@ -494,7 +494,7 @@ drawcurve(Spline *s, int hshift)
 }
 
 void
-fillrow(Spline *s, int y, int hshift)
+fillrow(Spline *s, int y, int width, int hshift)
 {
 	int x;
 	int evenodd = 0;
@@ -510,7 +510,7 @@ fillrow(Spline *s, int y, int hshift)
 	}
 	roots = cleanlist(roots);
 
-	for (x = 0; x < img->w; x++) {
+	for (x = 0; x < width; x++) {
 		if (isinlist(x, roots))
 			evenodd++;
 
