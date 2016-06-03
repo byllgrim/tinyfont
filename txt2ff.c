@@ -91,7 +91,7 @@ static void drawglyphs(void);
 static void drawsplines(Spline *s, int hshift);
 static void drawline(Spline *s, int hshift);
 static void drawcurve(Spline *s, int hshift);
-static void fillrow(Spline *s, int y);
+static void fillrow(Spline *s, int y, int hshift);
 
 static Node *findroots(Spline *s, int y);
 static Node *linroot(Spline *s, int y);
@@ -434,7 +434,7 @@ drawglyphs(void)
 		if ((g = getglyph(p))) {
 			drawsplines(g->splines, hshift);
 			for (y = miny; y <= maxy; y++)
-				fillrow(g->splines, y); /* TODO give hshift */
+				fillrow(g->splines, y, hshift);
 			hshift += scale*(g->width);
 		}
 	}
@@ -494,13 +494,13 @@ drawcurve(Spline *s, int hshift)
 }
 
 void
-fillrow(Spline *s, int y)
+fillrow(Spline *s, int y, int hshift)
 {
 	int x;
 	int evenodd = 0;
 	Node *roots, *tmp;
 	roots = ecalloc(1, sizeof(Node));
-	y = y/scale; /* TODO float? */
+	y = y/scale; /* TODO float? round? */
 
 	while ((s = s->next)) { /* first run deliberately skips dummy */
 		tmp = roots; /* is this stupid? */
@@ -515,7 +515,7 @@ fillrow(Spline *s, int y)
 			evenodd++;
 
 		if (evenodd%2) {
-			img->pxl[(int)(px-scale*y)][x] = 1; /* px-1 ? */
+			img->pxl[(int)(px-scale*y)][x+hshift] = 1; /* px-1 ? */
 		}
 	}
 }
