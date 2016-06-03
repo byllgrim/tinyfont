@@ -433,7 +433,7 @@ drawglyphs(void)
 		s += chartorune(&p, s);
 		if ((g = getglyph(p))) {
 			drawsplines(g->splines, hshift);
-			for (y = 0; y < img->h; y++)
+			for (y = miny; y <= maxy; y++)
 				fillrow(g->splines, y); /* TODO give hshift */
 			hshift += scale*(g->width);
 		}
