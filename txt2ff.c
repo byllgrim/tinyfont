@@ -1,6 +1,7 @@
 /* See LICENSE file */
 #include <arpa/inet.h>
 
+#include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -9,8 +10,9 @@
 #include <utf.h>
 
 /* Macros */
-#define MIN(a, b)               ((a) < (b) ? (a) : (b))
-#define MAX(a, b)               ((a) < (b) ? (b) : (a))
+#define MIN(a, b)  ((a) < (b) ? (a) : (b))
+#define MAX(a, b)  ((a) < (b) ? (b) : (a))
+#define INRANGE(t) (0 <= t && t <= 1)
 
 /* Types */
 typedef union {
@@ -59,6 +61,12 @@ typedef struct {
 	char **pxl; /* row-aligned */
 } Image;
 
+typedef struct Node Node;
+struct Node {
+	int i;
+	Node *next;
+};
+
 /* Function declarations */
 static void swap32(void *a);
 static void die(const char *errstr, ...);
@@ -83,6 +91,11 @@ static void drawglyphs(void);
 static void drawsplines(Spline *s, int hshift);
 static void drawline(Spline *s, int hshift);
 static void drawcurve(Spline *s, int hshift);
+static void fillrow(Spline *s, int y);
+
+static Node *findroots(Spline *s, int y);
+static Node *listroots(Spline *s, float *roots);
+static int isinlist(int x, Node *n);
 
 static void writefile();
 
@@ -293,7 +306,7 @@ parsecommands(int len)
 
 		switch (t.i) {
 		case 'c':
-			new = malloc(sizeof(Spline));
+			new = ecalloc(1, sizeof(Spline));
 			new->y3 = cmd[i-1]; new->x3 = cmd[i-2];
 			new->y2 = cmd[i-3]; new->x2 = cmd[i-4];
 			new->y1 = cmd[i-5]; new->x1 = cmd[i-6];
@@ -307,7 +320,7 @@ parsecommands(int len)
 			maxminy(new);
 			break;
 		case 'l':
-			new = malloc(sizeof(Spline));
+			new = ecalloc(1, sizeof(Spline));
 			new->y0 = y0; new->x0 = x0;
 			new->x1 = new->y1 = new->x2 = new->y2 = 0; /* -1 ? */
 			new->y3 = cmd[i-1]; new->x3 = cmd[i-2];
@@ -408,7 +421,7 @@ getglyph(Rune p)
 void
 drawglyphs(void)
 {
-	int hshift = 0;
+	int y, hshift = 0;
 	Rune p;
 	Glyph *g;
 	char *s = txt;
@@ -417,6 +430,8 @@ drawglyphs(void)
 		s += chartorune(&p, s);
 		if ((g = getglyph(p))) {
 			drawsplines(g->splines, hshift);
+			for (y = 0; y < img->h; y++)
+				fillrow(g->splines, y); /* TODO give hshift */
 			hshift += scale*(g->width);
 		}
 	}
@@ -476,6 +491,113 @@ drawcurve(Spline *s, int hshift)
 }
 
 void
+fillrow(Spline *s, int y)
+{
+	int x;
+	int evenodd = 0;
+	Node *roots, *tmp;
+	roots = ecalloc(1, sizeof(Node));
+	y = y/scale; /* TODO float? */
+
+	while ((s = s->next)) { /* first run deliberately skips dummy */
+		tmp = roots; /* is this stupid? */
+		while (tmp->next)
+			tmp = tmp->next;
+		tmp->next = findroots(s, y);
+	}
+
+	for (x = 0; x < img->w; x++) {
+		if (isinlist(x, roots))
+			evenodd++;
+
+		if (evenodd%2)
+			img->pxl[(int)((px-1)-scale*y)][x] = 1;
+	}
+}
+
+/* TODO find linear roots */
+
+Node *
+findroots(Spline *s, int y)
+{
+	float pa = -s->y0 + 3*s->y1 - 3*s->y2 + s->y3,
+	      pb = 3*s->y0 - 6*s->y1 + 3*s->y2,
+	      pc = -3*s->y0 + 3*s->y1,
+	      pd = s->y0 - y;
+	float a = pb/pa, b = pc/pa, c = pd/pa;
+	float p = b - (a*a)/3,
+	      q = c + (2*a*a*a - 9*a*b)/27,
+	      p3 = p/3,
+	      q2 = q/2,
+	      D = p3*p3*p3 + q2*q2; /* discriminant */
+	float mp3, mp33, r, t, cosphi, phi, crtr, t1, sd,
+	      u1, v1, roots[3];
+	roots[0] = roots[1] = roots[2] = -1;
+
+	if (D > 0 || (p == 0 && q == 0) ) {
+		sd = sqrt(D);
+		u1 = cbrt(sd - q2);
+		v1 = cbrt(sd + q2);
+		roots[0] = u1 - v1 - a/3;
+	} else if (D < 0) {
+		mp3 = -p/3;
+		mp33 = mp3*mp3*mp3;
+		r = sqrt( mp33 );
+		t = -q / (2*r);
+		cosphi = t<-1 ? -1 : t>1 ? 1 : t;
+		phi = acos(cosphi);
+		crtr = cbrt(r);
+		t1 = 2*crtr;
+		roots[0] = t1 * cos(phi/3) - a/3;
+		roots[1] = t1 * cos((phi+2*M_PI)/3) - a/3;
+		roots[2] = t1 * cos((phi+4*M_PI)/3) - a/3;
+	} else if (D == 0) {
+		u1 = q2 < 0 ? cbrt(-q2) : -cbrt(q2);
+		roots[0] = 2*u1 - a/3;
+		roots[1] = -u1 - a/3;
+	} else {
+		printf("what? D = %f\n", D);
+	}
+
+	return listroots(s, (float *)&roots);
+}
+
+Node *
+listroots(Spline *s, float *roots)
+{
+	/* the datastructures for roots could be improved */
+	int i;
+	float t, t2, t3, tt, tt2, tt3;
+	Node *dummy, *end;
+	dummy = end = ecalloc(1, sizeof(Node));
+
+	for (i = 0; i < 3; i++) {
+		if (INRANGE(roots[i])) {
+			t = roots[i]; t2 = t*t; t3 = t2*t;
+			tt = 1-t; tt2 = tt*tt; tt3 = tt2*tt;
+			end->next = ecalloc(1, sizeof(Node));
+			end = end->next;
+			end->i = scale*(s->x0*tt3 + 3*s->x1*tt2*t
+			                + 3*s->x2*tt*t2 + s->x3*t3);
+		}
+	}
+
+	end = dummy->next;
+	free(dummy);
+	return end; /* did all of this go right? */
+}
+
+int
+isinlist(int x, Node *n)
+{
+	for (n = n->next; n; n = n->next) {
+		if (n->i == x)
+			return 1;
+	}
+	return 0;
+}
+
+void
 writefile(void)
 {
 	int i, j;
@@ -516,7 +638,6 @@ main(int argc, char *argv[])
 	readglyphs();
 	initimage();
 	drawglyphs();
-	/* fillshapes(); */
 	writefile();
 
 	return EXIT_SUCCESS;
