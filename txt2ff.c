@@ -94,8 +94,11 @@ static void drawcurve(Spline *s, int hshift);
 static void fillrow(Spline *s, int y);
 
 static Node *findroots(Spline *s, int y);
+static Node *linroot(Spline *s, int y);
+static Node *cuberoots(Spline *s, int y);
 static Node *listroots(Spline *s, float *roots);
 static int isinlist(int x, Node *n);
+static Node *cleanlist(Node *n);
 
 static void writefile();
 
@@ -462,7 +465,7 @@ drawline(Spline *s, int hshift)
 		x = x0*(1-t) + x3*t;
 		y = y0*(1-t) + y3*t;
 		x = (scale*x)+hshift;
-		y = ((px-1)-scale*y);
+		y = (px-scale*y); /* px-1 ? */
 		img->pxl[(int)(y)][(int)x] = 1;
 	}
 }
@@ -485,7 +488,7 @@ drawcurve(Spline *s, int hshift)
 		x = x0*d3 + x1*3*t1*d2 + x2*3*t2*d1 + x3*t3;
 		y = y0*d3 + y1*3*t1*d2 + y2*3*t2*d1 + y3*t3;
 		x = (scale*x)+hshift;
-		y = ((px-1) - (scale*y));
+		y = (px - scale*y); /* px-1 ? */
 		img->pxl[(int)(y)][(int)x] = 1;
 	}
 }
@@ -505,20 +508,43 @@ fillrow(Spline *s, int y)
 			tmp = tmp->next;
 		tmp->next = findroots(s, y);
 	}
+	roots = cleanlist(roots);
 
 	for (x = 0; x < img->w; x++) {
 		if (isinlist(x, roots))
 			evenodd++;
 
-		if (evenodd%2)
-			img->pxl[(int)((px-1)-scale*y)][x] = 1;
+		if (evenodd%2) {
+			img->pxl[(int)(px-scale*y)][x] = 1; /* px-1 ? */
+		}
 	}
 }
 
-/* TODO find linear roots */
-
 Node *
 findroots(Spline *s, int y)
+{
+	if ((s->x1 == 0) && (s->y1 == 0) && (s->x2 == 0) && (s->y2 == 0))
+		return linroot(s, y);
+	else
+		return cuberoots(s, y);
+}
+
+Node *
+linroot(Spline *s, int y)
+{
+	Node *root = ecalloc(1, sizeof(Node));
+	float t = -(s->y0 - y)/(s->y3 - s->y0);
+
+	if (INRANGE(t))
+		root->i = scale*(s->x0*(1-t) + s->x3*t);
+	else
+		root->i = -1;
+
+	return root;
+}
+
+Node *
+cuberoots(Spline *s, int y)
 {
 	float pa = -s->y0 + 3*s->y1 - 3*s->y2 + s->y3,
 	      pb = 3*s->y0 - 6*s->y1 + 3*s->y2,
@@ -590,11 +616,40 @@ listroots(Spline *s, float *roots)
 int
 isinlist(int x, Node *n)
 {
+	if (!n)
+		return 0;
+
 	for (n = n->next; n; n = n->next) {
 		if (n->i == x)
 			return 1;
 	}
 	return 0;
+}
+
+Node *
+cleanlist(Node *n)
+{
+	/* TODO remove duplicates */
+	Node *start, *tmp;
+
+	while (n->i == -1) {
+		tmp = n;
+		n = n->next; /* is this safe? */
+		free(tmp);
+	}
+	start = n;
+
+	while (n->next) {
+		if (n->next->i == -1) {
+			tmp = n->next;
+			n->next = n->next->next;
+			free(tmp);
+		} else {
+			n = n->next;
+		}
+	}
+
+	return start;
 }
 
 void

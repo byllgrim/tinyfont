@@ -2,3 +2,4 @@ Draw small px sizes (try 'tinyfont' with 10px).
 Fill the shapes (even-odd rule?).
 Use anti-aliasing.
 Parse combining characters (åá;).
+Stop drawing the outlines (use only fill).
