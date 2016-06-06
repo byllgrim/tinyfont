@@ -434,7 +434,7 @@ drawglyphs(void)
 		if ((g = getglyph(p))) {
 			drawsplines(g->splines, hshift);
 			for (y = miny; y <= maxy; y++)
-				fillrow(g->splines, y, g->width, hshift);
+				fillrow(g->splines, y, scale*g->width, hshift);
 			hshift += scale*(g->width);
 		}
 	}
@@ -500,7 +500,6 @@ fillrow(Spline *s, int y, int width, int hshift)
 	int evenodd = 0;
 	Node *roots, *tmp;
 	roots = ecalloc(1, sizeof(Node));
-	y = y/scale; /* TODO float? round? */
 
 	while ((s = s->next)) { /* first run deliberately skips dummy */
 		tmp = roots; /* is this stupid? */
@@ -514,9 +513,8 @@ fillrow(Spline *s, int y, int width, int hshift)
 		if (isinlist(x, roots))
 			evenodd++;
 
-		if (evenodd%2) {
-			img->pxl[(int)(px-scale*y)][x+hshift] = 1; /* px-1 ? */
-		}
+		if (evenodd%2)
+			img->pxl[(int)(px-y)][x+hshift] = 1; /* px-1 ? */
 	}
 }
 
@@ -533,7 +531,8 @@ Node *
 linroot(Spline *s, int y)
 {
 	Node *root = ecalloc(1, sizeof(Node));
-	float t = -(s->y0 - y)/(s->y3 - s->y0);
+	float y0 = scale*s->y0, y3 = scale*s->y3;
+	float t = -(y0 - y)/(y3 - y0);
 
 	if (INRANGE(t))
 		root->i = scale*(s->x0*(1-t) + s->x3*t);
@@ -546,10 +545,12 @@ linroot(Spline *s, int y)
 Node *
 cuberoots(Spline *s, int y)
 {
-	float pa = -s->y0 + 3*s->y1 - 3*s->y2 + s->y3,
-	      pb = 3*s->y0 - 6*s->y1 + 3*s->y2,
-	      pc = -3*s->y0 + 3*s->y1,
-	      pd = s->y0 - y;
+	float y0 = scale*s->y0, y1 = scale*s->y1,
+	      y2 = scale*s->y2, y3 = scale*s->y3;
+	float pa = -y0 + 3*y1 - 3*y2 + y3,
+	      pb = 3*y0 - 6*y1 + 3*y2,
+	      pc = -3*y0 + 3*y1,
+	      pd = y0 - y;
 	float a = pb/pa, b = pc/pa, c = pd/pa;
 	float p = b - (a*a)/3,
 	      q = c + (2*a*a*a - 9*a*b)/27,
