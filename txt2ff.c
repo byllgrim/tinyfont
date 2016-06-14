@@ -281,15 +281,16 @@ long
 getoffset(Rune p)
 {
 	OffsetEntry **map = om->map;
-	int len, index;
+	int len, index, i = 1;
 	len = om->len;
 	index = p % len;
 
-	while (map[index] && map[index]->rune != p)
-		index++;
+	while (i && map[index]->rune != p) {
+		index == len - 1 ? index = 0 : index++;
+		i == len ? i = 0 : i++;
+	}
 
-	/* TODO should properly handle out of bounds instead of this */
-	return index < len ? map[index]->offset + glyphsoffset : -1;
+	return map[index]->offset + glyphsoffset;
 }
 
 Spline *
