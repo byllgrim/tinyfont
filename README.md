@@ -4,7 +4,10 @@ A file format for vector fonts.
 Inspired by the image format 'farbfeld', this was an attempt to create
 a publishing format (not editing) for fonts.
 
-It was way beyond my capabilities, but i got some interesting results.
+It was a bit beyond my capabilities, but i got some results.
+
+# Sample
+![alt text](./tinyfont.png "tinyfont")
 
 # Dependencies
 http://git.suckless.org/libutf/
