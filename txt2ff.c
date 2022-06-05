@@ -106,7 +106,6 @@ static void writefile();
 static Buf buf;
 static char *txt;
 static FILE *fontfile;
-static FILE *outfile;
 static OffsetMap *om;
 static GlyphMap *gm;
 static Image *img;
@@ -584,7 +583,7 @@ cuberoots(Spline *s, int y)
 		roots[0] = 2*u1 - a/3;
 		roots[1] = -u1 - a/3;
 	} else {
-		printf("what? D = %f\n", D);
+		fprintf(stderr,"what? D = %f\n", D);
 	}
 
 	return listroots(s, (float *)&roots);
@@ -661,18 +660,18 @@ writefile(void)
 	uint32_t width, height;
 	char magic[8] = "farbfeld";
 
-	fwrite(magic, sizeof(char), 8, outfile);
+	fwrite(magic, sizeof(char), 8, stdout);
 	width = htonl((uint32_t)img->w);
 	height = htonl((uint32_t)img->h);
-	fwrite(&width, sizeof(uint32_t), 1, outfile);
-	fwrite(&height, sizeof(uint32_t), 1, outfile);
+	fwrite(&width, sizeof(uint32_t), 1, stdout);
+	fwrite(&height, sizeof(uint32_t), 1, stdout);
 
 	for (i = 0; i < img->h; i++) {
 		for (j = 0; j < img->w; j++) {
 			if (!img->pxl[i][j])
-				fwrite(&white, sizeof(uint16_t), 4, outfile);
+				fwrite(&white, sizeof(uint16_t), 4, stdout);
 			else
-				fwrite(&black, sizeof(uint16_t), 4, outfile);
+				fwrite(&black, sizeof(uint16_t), 4, stdout);
 		}
 	}
 }
@@ -684,8 +683,6 @@ main(int argc, char *argv[])
 		die("usage: txt2ff fontfile px string\n");
 	if (!(fontfile = fopen(argv[1], "r")))
 		die("failed to open fontfile\n");
-	if (!(outfile = fopen("out.ff", "w")))
-		die("failed to open outfile\n");
 
 	px = atoi(argv[2]);
 	txt = argv[3];

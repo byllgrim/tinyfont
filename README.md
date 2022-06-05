@@ -10,13 +10,11 @@ It was a bit beyond my capabilities, but i got some results.
 ![alt text](./tinyfont.png "tinyfont")
 
 # Dependencies
-http://git.suckless.org/libutf/
+https://github.com/cls/libutf
 
 # Try it
 Build the programs with `$ make` and run it as follows:
 
 `$ ./sfd2tf < ~/downloads/Inconsolata.sfd > Inconsolata.tf`
 
-`$ ./txt2ff Inconsolata.tf 48 tinyfont`
-
-`$ feh out.ff`
+`$ ./txt2ff Inconsolata.tf 48 tinyfont | lel`
